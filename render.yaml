@@ -2,7 +2,7 @@ services:
   - type: web
     name: rf-crm
     runtime: python
-    repo: https://github.com/jesusebc/rf-crm
+    repo: https://github.com/cesarholguin-cyber/CRM-
     plan: free
     buildCommand: ./build.sh
     startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT

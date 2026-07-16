@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rf-green-900: #0f2b1d;
+  --color-rf-green-800: #1a3c2a;
+  --color-rf-green-700: #2d5a3e;
+  --color-rf-green-600: #3d7a4f;
+  --color-rf-green-500: #4a7c59;
+  --color-rf-green-400: #6b9b78;
+  --color-rf-green-300: #8fb99a;
+  --color-rf-green-200: #b8d5be;
+  --color-rf-green-100: #dceee1;
+  --color-rf-green-50: #f0f7f2;
+
+  --color-rf-gold: #8b7355;
+  --color-rf-gold-light: #d4a574;
+  --color-rf-gold-dark: #6b5535;
+
+  --color-rf-cream: #f5f0e8;
+  --color-rf-cream-dark: #e8dfd0;
+
+  --color-rf-dark: #1a1a1a;
+  --color-rf-gray: #4a4a4a;
+  --color-rf-gray-light: #9ca3af;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-rf-cream);
+  color: var(--color-rf-dark);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-rf-cream);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-rf-green-300);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-rf-green-400);
+}

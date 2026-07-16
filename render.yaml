@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: rf-crm
+    runtime: python
+    repo: https://github.com/jesusebc/rf-crm
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rf-crm-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://rf-crm.onrender.com
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 120
+      - key: DEBUG
+        value: false
+      - key: PYTHON_VERSION
+        value: 3.12.0
+
+databases:
+  - name: rf-crm-db
+    databaseName: rf_crm
+    plan: free
+    region: oregon

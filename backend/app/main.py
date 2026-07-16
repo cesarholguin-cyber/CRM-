@@ -12,7 +12,9 @@ import os
 from pathlib import Path
 
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import engine, Base, async_session_factory
+from app.core.security import get_password_hash
+from app.models.user import User, UserRole
 from app.api import auth, users, projects, lots, clients, sales, dashboard
 
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +30,26 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created/verified")
+
+    # Seed default admin user if none exist
+    async with async_session_factory() as session:
+        from sqlalchemy import select, func
+        result = await session.execute(select(func.count(User.id)))
+        if result.scalar() == 0:
+            admin = User(
+                email="admin@rfdesarrollos.com",
+                username="admin",
+                hashed_password=get_password_hash("Admin123!"),
+                full_name="Administrador",
+                role=UserRole.SUPERUSER,
+                is_active=True,
+            )
+            session.add(admin)
+            await session.commit()
+            logger.info("Default admin user created: admin@rfdesarrollos.com / Admin123!")
+        else:
+            logger.info("Users already exist, skipping seed")
+
     yield
     # Shutdown
     await engine.dispose()

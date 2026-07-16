@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { lotsApi, projectsApi } from '../lib/api';
 import { useSearchParams } from 'react-router-dom';
-import { Map, Filter, Download, RotateCcw } from 'lucide-react';
+import { Map, Filter, Download, RotateCcw, Grid3X3, Layers } from 'lucide-react';
+
+const statusConfig = {
+  available: { label: 'Disponible', color: 'bg-emerald-500', light: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700', hover: 'hover:border-emerald-400 hover:shadow-emerald-200/50' },
+  reserved: { label: 'Apartado', color: 'bg-amber-500', light: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700', hover: 'hover:border-amber-400 hover:shadow-amber-200/50' },
+  sold: { label: 'Vendido', color: 'bg-rf-green-800', light: 'bg-rf-green-100', border: 'border-rf-green-800', text: 'text-rf-green-800', hover: 'hover:border-rf-green-900 hover:shadow-rf-green-200/50' },
+  blocked: { label: 'Bloqueado', color: 'bg-red-500', light: 'bg-red-50', border: 'border-red-300', text: 'text-red-700', hover: 'hover:border-red-400 hover:shadow-red-200/50' },
+};
 
 export default function LotsPage() {
   const [searchParams] = useSearchParams();
@@ -27,16 +34,6 @@ export default function LotsPage() {
       .finally(() => setLoading(false));
   }, [selectedProject, filter]);
 
-  const getStatusColor = (status) => {
-    const colors = {
-      available: 'bg-emerald-100 text-emerald-700 border-emerald-300',
-      reserved: 'bg-amber-100 text-amber-700 border-amber-300',
-      sold: 'bg-rf-green-800 text-white border-rf-green-800',
-      blocked: 'bg-red-100 text-red-700 border-red-300',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700';
-  };
-
   const handleBulkImport = async () => {
     try {
       const rows = importData.trim().split('\n').filter(Boolean);
@@ -47,7 +44,6 @@ export default function LotsPage() {
       await lotsApi.bulkCreate(selectedProject, { lots });
       setShowImport(false);
       setImportData('');
-      // Refresh
       const res = await lotsApi.list(selectedProject);
       setLots(res.data);
     } catch (err) {
@@ -66,16 +62,18 @@ export default function LotsPage() {
 
   const selectedProjectData = projects.find((p) => p.id === parseInt(selectedProject));
 
+  const filteredLots = filter === 'all' ? lots : lots.filter((l) => l.status === filter);
+
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-rf-dark">Inventario de Lotes</h1>
-          <p className="text-sm text-rf-gray-light mt-1">Visualiza y gestiona el inventario de lotes</p>
+          <h1 className="text-3xl font-bold text-rf-dark">Inventario de Lotes</h1>
+          <p className="text-base text-rf-gray-light mt-1">Visualiza y gestiona el inventario de lotes</p>
         </div>
         <div className="flex gap-2">
           {selectedProject && (
-            <button onClick={() => setShowImport(true)} className="bg-white border border-rf-cream-dark text-rf-gray px-3 py-2 rounded-lg flex items-center gap-2 hover:bg-rf-cream transition text-sm">
+            <button onClick={() => setShowImport(true)} className="bg-white border border-gray-200 text-gray-500 px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 transition-all duration-300 text-sm font-medium shadow-sm">
               <Download size={16} />
               Importar
             </button>
@@ -84,13 +82,13 @@ export default function LotsPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-xl p-4 border border-rf-cream-dark mb-6 flex flex-wrap gap-4 items-center">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-100 mb-6 flex flex-wrap gap-4 items-center shadow-sm">
         <div className="flex items-center gap-2">
-          <Filter size={16} className="text-rf-gray-light" />
+          <Filter size={16} className="text-gray-300" />
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="border border-rf-cream-dark rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rf-green-500"
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all"
           >
             <option value="">Seleccionar proyecto</option>
             {projects.map((p) => (
@@ -99,13 +97,15 @@ export default function LotsPage() {
           </select>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 flex-wrap">
           {['all', 'available', 'reserved', 'sold', 'blocked'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                filter === f ? 'bg-rf-green-800 text-white' : 'bg-rf-cream text-rf-gray hover:bg-rf-cream-dark'
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                filter === f
+                  ? 'bg-rf-green-800 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
               }`}
             >
               {f === 'all' ? 'Todos' : f === 'available' ? 'Disponibles' : f === 'reserved' ? 'Apartados' : f === 'sold' ? 'Vendidos' : 'Bloqueados'}
@@ -114,74 +114,98 @@ export default function LotsPage() {
         </div>
 
         {selectedProject && selectedProjectData && (
-          <div className="ml-auto text-sm text-rf-gray-light">
-            <span className="font-medium text-rf-dark">{lots.length}</span> lotes · $ {selectedProjectData.price_per_sqm.toLocaleString('es-MX')}/m²
+          <div className="ml-auto text-sm text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg">
+            <span className="font-semibold text-rf-dark">{filteredLots.length}</span> lotes · $ {(selectedProjectData.price_per_sqm || 0).toLocaleString('es-MX')}/m²
           </div>
         )}
       </div>
 
-      {/* Leyenda */}
-      <div className="flex gap-4 mb-4 text-xs text-rf-gray">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Disponible</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Apartado</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rf-green-800 inline-block"></span> Vendido</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span> Bloqueado</span>
-      </div>
-
-      {/* Grid de lotes */}
       {loading ? (
-        <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-rf-green-600 border-t-transparent rounded-full" /></div>
+        <div className="flex items-center justify-center h-64">
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-rf-green-100 border-t-rf-green-800 rounded-full animate-spin" />
+            <div className="w-12 h-12 border-4 border-rf-green-200 border-t-rf-green-600 rounded-full animate-spin absolute inset-0" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+          </div>
+        </div>
       ) : !selectedProject ? (
-        <div className="bg-white rounded-xl p-12 border border-rf-cream-dark text-center">
-          <Map size={48} className="mx-auto text-rf-green-300 mb-4" />
-          <h3 className="text-lg font-medium text-rf-dark mb-2">Selecciona un proyecto</h3>
-          <p className="text-sm text-rf-gray-light">Elige un proyecto para ver su inventario de lotes</p>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-16 border border-dashed border-gray-200 text-center animate-scale-in">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-rf-green-100 to-rf-green-50 flex items-center justify-center">
+            <Grid3X3 size={40} className="text-rf-green-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-rf-dark mb-2">Selecciona un proyecto</h3>
+          <p className="text-gray-400">Elige un proyecto para ver su inventario de lotes</p>
         </div>
       ) : lots.length === 0 ? (
-        <div className="bg-white rounded-xl p-12 border border-rf-cream-dark text-center">
-          <p className="text-rf-gray-light">No hay lotes en este proyecto. Importa desde Excel o crea lotes manualmente.</p>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-16 border border-dashed border-gray-200 text-center animate-scale-in">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+            <Layers size={40} className="text-amber-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-rf-dark mb-2">No hay lotes en este proyecto</h3>
+          <p className="text-gray-400 mb-6">Importa desde CSV o crea lotes manualmente</p>
+          <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 bg-rf-green-800 text-white px-5 py-2.5 rounded-xl hover:bg-rf-green-700 transition-all text-sm font-medium shadow-md">
+            <Download size={16} /> Importar Lotes
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-          {lots.map((lot) => (
-            <div key={lot.id} className={`bg-white rounded-lg border-2 p-3 transition-all hover:shadow-md ${getStatusColor(lot.status).includes('sold') ? 'border-rf-green-800' : lot.status === 'available' ? 'border-emerald-300' : lot.status === 'reserved' ? 'border-amber-300' : 'border-red-300'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-rf-dark">{lot.lot_number}</span>
-                {lot.block && <span className="text-xs text-rf-gray-light">Mz {lot.block}</span>}
-              </div>
-              <p className="text-xs text-rf-gray mb-1">{lot.area_sqm} m²</p>
-              <p className="text-xs font-medium text-rf-dark">${(lot.total_price || lot.area_sqm * lot.price_per_sqm).toLocaleString('es-MX')}</p>
-              <select
-                value={lot.status}
-                onChange={(e) => handleStatusChange(lot.id, e.target.value)}
-                className={`mt-2 text-xs w-full rounded px-1 py-0.5 border ${getStatusColor(lot.status)}`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <option value="available">Disponible</option>
-                <option value="reserved">Apartado</option>
-                <option value="sold">Vendido</option>
-                <option value="blocked">Bloqueado</option>
-              </select>
-            </div>
-          ))}
-        </div>
+        <>
+          {/* Leyenda */}
+          <div className="flex gap-4 mb-4 text-xs text-gray-400 flex-wrap">
+            {Object.entries(statusConfig).map(([key, cfg]) => (
+              <span key={key} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${cfg.color}`} />
+                {cfg.label}
+              </span>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {lots.map((lot, i) => {
+              const cfg = statusConfig[lot.status] || statusConfig.available;
+              return (
+                <div
+                  key={lot.id}
+                  className={`group bg-white rounded-xl border-2 p-3.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${cfg.border} ${cfg.hover} ${cfg.light}`}
+                  style={{ animation: `scale-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) ${i * 30}ms both` }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-rf-dark">#{lot.lot_number}</span>
+                    {lot.block && <span className="text-[10px] text-gray-400 bg-white/80 px-1.5 py-0.5 rounded border border-gray-200">MZ {lot.block}</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 mb-1">{lot.area_sqm} m²</p>
+                  <p className="text-sm font-bold text-rf-dark mb-2.5">${(lot.total_price || lot.area_sqm * (lot.price_per_sqm || 0)).toLocaleString('es-MX')}</p>
+                  <select
+                    value={lot.status}
+                    onChange={(e) => handleStatusChange(lot.id, e.target.value)}
+                    className={`w-full text-xs rounded-lg px-2 py-1.5 border font-medium transition-all ${lot.status === 'available' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : lot.status === 'reserved' ? 'bg-amber-50 border-amber-200 text-amber-700' : lot.status === 'sold' ? 'bg-rf-green-100 border-rf-green-600 text-rf-green-800' : 'bg-red-50 border-red-200 text-red-700'} focus:outline-none focus:ring-2 focus:ring-rf-green-500/30`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <option value="available">Disponible</option>
+                    <option value="reserved">Apartado</option>
+                    <option value="sold">Vendido</option>
+                    <option value="blocked">Bloqueado</option>
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Import Modal */}
       {showImport && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowImport(false)}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-rf-dark mb-2">Importar Lotes</h2>
-            <p className="text-sm text-rf-gray-light mb-4">Pega los datos en formato CSV: <code>número, área_m², precio_m², manzana</code></p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowImport(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold text-rf-dark mb-2">Importar Lotes</h2>
+            <p className="text-sm text-gray-400 mb-4">Pega los datos en formato CSV: <code className="bg-gray-100 px-2 py-0.5 rounded text-xs">número, área_m², precio_m², manzana</code></p>
             <textarea
               value={importData}
               onChange={(e) => setImportData(e.target.value)}
-              className="w-full h-40 border border-rf-cream-dark rounded-lg p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rf-green-500"
+              className="w-full h-40 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all resize-none"
               placeholder={`1,200,1000,A\n2,200,1000,A\n3,200,1000,B\n...`}
             />
             <div className="flex gap-3 mt-4">
-              <button onClick={() => setShowImport(false)} className="flex-1 py-2 border border-rf-cream-dark rounded-lg text-rf-gray hover:bg-rf-cream transition text-sm">Cancelar</button>
-              <button onClick={handleBulkImport} className="flex-1 py-2 bg-rf-green-800 text-white rounded-lg hover:bg-rf-green-700 transition text-sm font-medium">Importar</button>
+              <button onClick={() => setShowImport(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium">Cancelar</button>
+              <button onClick={handleBulkImport} className="flex-1 py-2.5 bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white rounded-xl hover:from-rf-green-700 hover:to-rf-green-600 hover:shadow-lg transition-all duration-300 text-sm font-medium shadow-md">Importar</button>
             </div>
           </div>
         </div>

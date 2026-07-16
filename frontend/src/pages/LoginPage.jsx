@@ -38,8 +38,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-rf-green-800 text-white mb-4 shadow-lg">
-            <span className="text-2xl font-bold">R&F</span>
+          <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-rf-green-800 flex items-center justify-center p-4 shadow-lg">
+            <img src="https://rfdesarrolloscampestres.com/wp-content/uploads/2021/08/Logo-RF-Blanco-1.png" alt="R&F Desarrollos Campestres" className="w-full" />
           </div>
           <h1 className="text-2xl font-bold text-rf-green-800">R&F Desarrollos Campestres</h1>
           <p className="text-rf-gray mt-1">CRM de Ventas</p>

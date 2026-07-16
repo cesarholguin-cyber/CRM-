@@ -42,13 +42,13 @@ export default function DashboardLayout() {
         `}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-rf-green-700">
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1.5 flex-shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-rf-green-700">
+          <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center p-2.5 flex-shrink-0">
             <img src="https://rfdesarrolloscampestres.com/wp-content/uploads/2021/08/Logo-RF-Blanco-1.png" alt="R&F" className="w-full brightness-0" />
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-sm font-bold leading-tight text-white">R&F</h1>
+              <h1 className="text-base font-bold leading-tight text-white">R&F</h1>
               <p className="text-xs text-rf-green-200">Desarrollos Campestres</p>
             </div>
           )}

@@ -35,7 +35,7 @@ export default function ProjectsPage() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-rf-green-600 border-t-transparent rounded-full" /></div>;
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-rf-dark">Proyectos</h1>

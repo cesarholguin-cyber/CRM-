@@ -16,72 +16,76 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-rf-green-600 border-t-transparent rounded-full" />
+        <div className="w-10 h-10 border-4 border-rf-green-200 border-t-rf-green-800 rounded-full animate-spin" />
       </div>
     );
   }
 
   const cards = [
-    { label: 'Proyectos', value: stats?.total_projects || 0, icon: Building2, color: 'bg-blue-50 text-blue-600' },
-    { label: 'Lotes Totales', value: stats?.total_lots || 0, icon: Map, color: 'bg-green-50 text-green-600' },
-    { label: 'Lotes Disponibles', value: stats?.available_lots || 0, icon: Map, color: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Clientes', value: stats?.total_clients || 0, icon: Users, color: 'bg-purple-50 text-purple-600' },
-    { label: 'Ventas Totales', value: stats?.total_sales || 0, icon: ShoppingCart, color: 'bg-orange-50 text-orange-600' },
-    { label: 'Ventas del Mes', value: stats?.sales_this_month || 0, icon: TrendingUp, color: 'bg-indigo-50 text-indigo-600' },
-    { label: 'Ingresos Totales', value: `$${(stats?.total_revenue || 0).toLocaleString('es-MX')}`, icon: DollarSign, color: 'bg-yellow-50 text-yellow-600' },
-    { label: 'Ingresos del Mes', value: `$${(stats?.revenue_this_month || 0).toLocaleString('es-MX')}`, icon: DollarSign, color: 'bg-amber-50 text-amber-600' },
-    { label: 'Agentes', value: stats?.agents_count || 0, icon: Users, color: 'bg-teal-50 text-teal-600' },
+    { label: 'Proyectos', value: stats?.total_projects || 0, icon: Building2, gradient: 'from-blue-500 to-blue-600' },
+    { label: 'Lotes Totales', value: stats?.total_lots || 0, icon: Map, gradient: 'from-emerald-500 to-emerald-600' },
+    { label: 'Lotes Disponibles', value: stats?.available_lots || 0, icon: Map, gradient: 'from-green-500 to-green-600' },
+    { label: 'Clientes', value: stats?.total_clients || 0, icon: Users, gradient: 'from-violet-500 to-violet-600' },
+    { label: 'Ventas Totales', value: stats?.total_sales || 0, icon: ShoppingCart, gradient: 'from-orange-500 to-orange-600' },
+    { label: 'Ventas del Mes', value: stats?.sales_this_month || 0, icon: TrendingUp, gradient: 'from-indigo-500 to-indigo-600' },
+    { label: 'Ingresos Totales', value: `$${(stats?.total_revenue || 0).toLocaleString('es-MX')}`, icon: DollarSign, gradient: 'from-amber-500 to-amber-600' },
+    { label: 'Ingresos del Mes', value: `$${(stats?.revenue_this_month || 0).toLocaleString('es-MX')}`, icon: DollarSign, gradient: 'from-yellow-500 to-yellow-600' },
+    { label: 'Agentes', value: stats?.agents_count || 0, icon: Users, gradient: 'from-teal-500 to-teal-600' },
   ];
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="animate-fade-in">
+      <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-rf-dark">Dashboard</h1>
           <p className="text-base text-rf-gray-light mt-1">Resumen general de tu operación</p>
         </div>
-        <div className="hidden sm:block w-12 h-12 rounded-full bg-rf-green-100 flex items-center justify-center">
-          <Building2 size={24} className="text-rf-green-600" />
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rf-green-100 to-rf-green-50 flex items-center justify-center shadow-md">
+          <Building2 size={28} className="text-rf-green-600" />
         </div>
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-        {cards.map((card) => (
-          <div key={card.label} className="bg-white rounded-xl p-5 border border-rf-cream-dark shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-base text-rf-gray-light">{card.label}</p>
-                  <p className="text-3xl font-bold text-rf-dark mt-1">{card.value}</p>
-                </div>
-                <div className={`p-4 rounded-lg ${card.color}`}>
-                  <card.icon size={24} />
-                </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
+        {cards.map((card, i) => (
+          <div
+            key={card.label}
+            className="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            style={{ animation: `slide-up 0.5s ease-out ${i * 50}ms both` }}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-gray-400 group-hover:text-gray-500 transition-colors">{card.label}</p>
+                <p className="text-3xl font-bold text-rf-dark mt-1.5 group-hover:text-rf-green-800 transition-colors">{card.value}</p>
               </div>
+              <div className={`p-3.5 rounded-xl bg-gradient-to-br ${card.gradient} text-white shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300`}>
+                <card.icon size={22} />
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Lotes status */}
+      {/* Bottom charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
           <h2 className="text-xl font-semibold text-rf-dark mb-4">Estado de Lotes</h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {[
               { label: 'Disponibles', value: stats?.available_lots || 0, color: 'bg-emerald-500' },
               { label: 'Apartados', value: stats?.reserved_lots || 0, color: 'bg-amber-500' },
               { label: 'Vendidos', value: stats?.sold_lots || 0, color: 'bg-rf-green-800' },
-            ].map((item) => {
+            ].map((item, i) => {
               const total = stats?.total_lots || 1;
               const pct = Math.round((item.value / total) * 100);
               return (
-                <div key={item.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-rf-gray">{item.label}</span>
-                    <span className="font-medium text-rf-dark">{item.value} ({pct}%)</span>
+                <div key={item.label} className="animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-rf-gray font-medium">{item.label}</span>
+                    <span className="font-semibold text-rf-dark">{item.value} — {pct}%</span>
                   </div>
-                  <div className="w-full bg-rf-cream rounded-full h-2.5">
-                    <div className={`${item.color} h-2.5 rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                  <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div className={`${item.color} h-full rounded-full transition-all duration-1000 ease-out`} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -89,19 +93,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
-          <h2 className="text-lg font-semibold text-rf-dark mb-4">Pipeline de Ventas</h2>
-          <div className="space-y-3">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+          <h2 className="text-xl font-semibold text-rf-dark mb-4">Pipeline de Ventas</h2>
+          <div className="space-y-4">
             {[
               { label: 'Leads activos', value: stats?.active_leads || 0, color: 'bg-blue-500' },
               { label: 'Ventas activas', value: stats?.active_sales || 0, color: 'bg-purple-500' },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between p-3 bg-rf-cream rounded-lg">
+            ].map((item, i) => (
+              <div key={item.label} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all animate-slide-up" style={{ animationDelay: `${i * 150}ms` }}>
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                  <span className="text-sm text-rf-gray">{item.label}</span>
+                  <div className={`w-3.5 h-3.5 rounded-full ${item.color} shadow-sm`} />
+                  <span className="text-sm text-rf-gray font-medium">{item.label}</span>
                 </div>
-                <span className="font-bold text-rf-dark">{item.value}</span>
+                <span className="font-bold text-rf-dark text-lg">{item.value}</span>
               </div>
             ))}
           </div>

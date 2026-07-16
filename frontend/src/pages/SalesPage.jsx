@@ -93,18 +93,18 @@ export default function SalesPage() {
   );
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-rf-dark">Ventas</h1>
           <p className="text-sm text-rf-gray-light mt-1">Gestiona apartados, contratos y financiamiento</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-rf-green-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-rf-green-700 transition text-sm font-medium">
+        <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-rf-green-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-rf-green-700 hover:shadow-lg transition-all text-sm font-medium active:scale-95">
           <Plus size={18} /> Nueva Venta
         </button>
       </div>
 
-      <div className="bg-white rounded-xl p-4 border border-rf-cream-dark mb-6 flex gap-2 flex-wrap">
+      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-6 flex gap-2 flex-wrap">
         {['', 'reserved', 'option_signed', 'contract_signed', 'financing', 'paid', 'cancelled'].map((s) => (
           <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${filter === s ? 'bg-rf-green-800 text-white' : 'bg-rf-cream text-rf-gray hover:bg-rf-cream-dark'}`}>
             {s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Todas'}
@@ -122,8 +122,8 @@ export default function SalesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {sales.map((sale) => (
-            <div key={sale.id} className="bg-white rounded-xl p-4 border border-rf-cream-dark hover:shadow-sm transition">
+          {sales.map((sale, i) => (
+            <div key={sale.id} className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 hover:-translate-y-0.5 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="font-medium text-rf-dark">Venta #{sale.id}</p>

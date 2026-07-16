@@ -67,7 +67,7 @@ export default function LotsPage() {
   const selectedProjectData = projects.find((p) => p.id === parseInt(selectedProject));
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-rf-dark">Inventario de Lotes</h1>

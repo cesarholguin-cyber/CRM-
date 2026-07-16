@@ -34,7 +34,7 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
         <Settings size={24} className="text-rf-green-600" />
         <div>

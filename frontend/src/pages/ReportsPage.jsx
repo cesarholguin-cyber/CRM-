@@ -61,7 +61,7 @@ export default function ReportsPage() {
   const statusCounts = pipeline.map((s) => ({ name: PIPELINE_LABELS[s.stage] || s.stage, value: s.count, fill: PIPELINE_COLORS[s.stage] }));
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
         <TrendingUp size={24} className="text-rf-green-600" />
         <div>
@@ -71,29 +71,24 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl p-5 border border-rf-cream-dark shadow-sm">
-          <p className="text-sm text-rf-gray-light">Ingresos Totales</p>
-          <p className="text-2xl font-bold text-rf-green-800 mt-1">${(stats?.total_revenue || 0).toLocaleString('es-MX')}</p>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-rf-cream-dark shadow-sm">
-          <p className="text-sm text-rf-gray-light">Ventas Totales</p>
-          <p className="text-2xl font-bold text-rf-dark mt-1">{stats?.total_sales || 0}</p>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-rf-cream-dark shadow-sm">
-          <p className="text-sm text-rf-gray-light">Ventas del Mes</p>
-          <p className="text-2xl font-bold text-rf-dark mt-1">{stats?.sales_this_month || 0}</p>
-        </div>
-        <div className="bg-white rounded-xl p-5 border border-rf-cream-dark shadow-sm">
-          <p className="text-sm text-rf-gray-light">Ingresos del Mes</p>
-          <p className="text-2xl font-bold text-rf-gold mt-1">${(stats?.revenue_this_month || 0).toLocaleString('es-MX')}</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        {[
+          { label: 'Ingresos Totales', value: (stats?.total_revenue || 0).toLocaleString('es-MX'), color: 'text-rf-green-800' },
+          { label: 'Ventas Totales', value: stats?.total_sales || 0, color: 'text-rf-dark' },
+          { label: 'Ventas del Mes', value: stats?.sales_this_month || 0, color: 'text-rf-dark' },
+          { label: 'Ingresos del Mes', value: (stats?.revenue_this_month || 0).toLocaleString('es-MX'), color: 'text-rf-gold' },
+        ].map((item, i) => (
+          <div key={item.label} className="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
+            <p className="text-sm text-gray-400 group-hover:text-gray-500 transition-colors">{item.label}</p>
+            <p className={`text-3xl font-bold ${item.color} mt-1.5`}>${item.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Pipeline bar chart */}
-        <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
           <h2 className="text-lg font-semibold text-rf-dark mb-4 flex items-center gap-2">
             <TrendingUp size={18} /> Pipeline de Ventas
           </h2>
@@ -109,7 +104,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Pipeline pie chart */}
-        <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
           <h2 className="text-lg font-semibold text-rf-dark mb-4 flex items-center gap-2">
             <PieChartIcon size={18} /> Distribución por Estatus
           </h2>
@@ -126,7 +121,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Pipeline by value */}
-        <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
           <h2 className="text-lg font-semibold text-rf-dark mb-4 flex items-center gap-2">
             <DollarSign size={18} /> Valor por Etapa
           </h2>
@@ -146,7 +141,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Lot status */}
-        <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
           <h2 className="text-lg font-semibold text-rf-dark mb-4">Estado de Lotes</h2>
           <div className="space-y-4">
             {[
@@ -169,12 +164,12 @@ export default function ReportsPage() {
       </div>
 
       {/* Recent sales table */}
-      <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
         <h2 className="text-lg font-semibold text-rf-dark mb-4">Ventas Recientes</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-rf-cream-dark">
+              <tr className="border-b border-gray-200">
                 <th className="text-left py-3 px-2 text-rf-gray-light font-medium">#</th>
                 <th className="text-left py-3 px-2 text-rf-gray-light font-medium">Cliente ID</th>
                 <th className="text-left py-3 px-2 text-rf-gray-light font-medium">Lote ID</th>

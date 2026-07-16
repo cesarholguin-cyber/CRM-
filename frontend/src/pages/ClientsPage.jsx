@@ -62,7 +62,7 @@ export default function ClientsPage() {
   };
 
   return (
-    <div>
+    <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-rf-dark">Clientes</h1>

@@ -41,7 +41,7 @@ export default function LoginPage() {
           <div className="w-56 h-56 mx-auto mb-6 rounded-full bg-rf-green-800 flex items-center justify-center p-8 shadow-lg">
             <img src="https://rfdesarrolloscampestres.com/wp-content/uploads/2021/08/Logo-RF-Blanco-1.png" alt="R&F Desarrollos Campestres" className="w-full" />
           </div>
-          <h1 className="text-2xl font-bold text-rf-green-800">R&F Desarrollos Campestres</h1>
+          <h1 className="text-3xl font-bold text-rf-green-800">R&F Desarrollos Campestres</h1>
           <p className="text-rf-gray mt-1">CRM de Ventas</p>
         </div>
 

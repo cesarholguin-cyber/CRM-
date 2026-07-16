@@ -37,8 +37,8 @@ export default function DashboardPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-rf-dark">Dashboard</h1>
-          <p className="text-sm text-rf-gray-light mt-1">Resumen general de tu operación</p>
+          <h1 className="text-3xl font-bold text-rf-dark">Dashboard</h1>
+          <p className="text-base text-rf-gray-light mt-1">Resumen general de tu operación</p>
         </div>
         <div className="hidden sm:block w-12 h-12 rounded-full bg-rf-green-100 flex items-center justify-center">
           <Building2 size={24} className="text-rf-green-600" />
@@ -49,15 +49,15 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
         {cards.map((card) => (
           <div key={card.label} className="bg-white rounded-xl p-5 border border-rf-cream-dark shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-rf-gray-light">{card.label}</p>
-                <p className="text-2xl font-bold text-rf-dark mt-1">{card.value}</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-base text-rf-gray-light">{card.label}</p>
+                  <p className="text-3xl font-bold text-rf-dark mt-1">{card.value}</p>
+                </div>
+                <div className={`p-4 rounded-lg ${card.color}`}>
+                  <card.icon size={24} />
+                </div>
               </div>
-              <div className={`p-3 rounded-lg ${card.color}`}>
-                <card.icon size={20} />
-              </div>
-            </div>
           </div>
         ))}
       </div>
@@ -65,7 +65,7 @@ export default function DashboardPage() {
       {/* Lotes status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 border border-rf-cream-dark shadow-sm">
-          <h2 className="text-lg font-semibold text-rf-dark mb-4">Estado de Lotes</h2>
+          <h2 className="text-xl font-semibold text-rf-dark mb-4">Estado de Lotes</h2>
           <div className="space-y-3">
             {[
               { label: 'Disponibles', value: stats?.available_lots || 0, color: 'bg-emerald-500' },

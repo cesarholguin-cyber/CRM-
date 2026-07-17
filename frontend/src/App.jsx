@@ -6,6 +6,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import LotsPage from './pages/LotsPage';
 import ClientsPage from './pages/ClientsPage';
 import SalesPage from './pages/SalesPage';
+import ApartadosPage from './pages/ApartadosPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -28,6 +29,7 @@ function AppRoutes() {
         <Route path="lots" element={<LotsPage />} />
         <Route path="clients" element={<ClientsPage />} />
         <Route path="sales" element={<SalesPage />} />
+        <Route path="apartados" element={<ApartadosPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

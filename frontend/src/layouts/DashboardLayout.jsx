@@ -3,7 +3,7 @@ import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import {
   LayoutDashboard, Users, Building2, Map, ShoppingCart,
-  BarChart3, Settings, LogOut, ChevronLeft, Menu, X,
+  Bookmark, BarChart3, Settings, LogOut, ChevronLeft, Menu, X,
 } from 'lucide-react';
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { icon: Map, label: 'Inventario de Lotes', path: '/lots' },
   { icon: Users, label: 'Clientes', path: '/clients' },
   { icon: ShoppingCart, label: 'Ventas', path: '/sales' },
+  { icon: Bookmark, label: 'Apartados', path: '/apartados' },
   { icon: BarChart3, label: 'Reportes', path: '/reports' },
   { icon: Settings, label: 'Configuración', path: '/settings' },
 ];

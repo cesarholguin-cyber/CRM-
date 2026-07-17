@@ -130,12 +130,19 @@ app.include_router(sales.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(public_routes.router, prefix="/api/v1")
 
-# SPA catch-all: serve index.html for any non-API route
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    if full_path.startswith("api/") or "/api/" in full_path:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    index_path = frontend_dist / "index.html"
-    if index_path.exists():
-        return FileResponse(str(index_path))
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Frontend not built")
+# SPA catch-all: serve index.html for any non-API route via middleware
+@app.middleware("http")
+async def spa_fallback(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        if response.status_code == 404 and not request.url.path.startswith("/api/"):
+            index_path = frontend_dist / "index.html"
+            if index_path.exists():
+                return FileResponse(str(index_path))
+        return response
+    except HTTPException as exc:
+        if exc.status_code == 404 and not request.url.path.startswith("/api/"):
+            index_path = frontend_dist / "index.html"
+            if index_path.exists():
+                return FileResponse(str(index_path))
+        raise

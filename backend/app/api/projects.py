@@ -18,7 +18,6 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 @router.get("/", response_model=list[ProjectResponse])
 async def list_projects(
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user, use_cache=False),
 ):
     result = await db.execute(select(Project).order_by(Project.name))
     return [ProjectResponse.model_validate(p) for p in result.scalars().all()]

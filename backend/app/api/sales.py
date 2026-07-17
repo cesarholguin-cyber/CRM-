@@ -8,6 +8,7 @@ from app.core.audit import write_audit_log
 from app.models.sale import Sale, SaleStatus, PaymentPlan, Payment
 from app.models.lot import Lot, LotStatus
 from app.models.client import Client
+from app.models.project import Project
 from app.schemas.sale import (
     SaleCreate, SaleUpdate, SaleResponse,
     PaymentPlanResponse, PaymentCreate, PaymentResponse,
@@ -134,20 +135,43 @@ async def update_sale(
     # Handle status transitions
     if "status" in update_dict:
         new_status = SaleStatus(update_dict["status"])
-        if new_status == SaleStatus.CONTRACT_SIGNED:
-            # Update lot to sold
-            result = await db.execute(select(Lot).where(Lot.id == sale.lot_id))
-            lot = result.scalar_one_or_none()
-            if lot:
+        old_status = SaleStatus(sale.status)
+        result = await db.execute(select(Lot).where(Lot.id == sale.lot_id))
+        lot = result.scalar_one_or_none()
+        if not lot:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lot not found")
+
+        if new_status == SaleStatus.PAID:
+            # Moving from reserved/cancelled to paid = sold
+            if old_status != SaleStatus.PAID:
                 lot.status = LotStatus.SOLD
                 lot.sold_at = datetime.now(timezone.utc)
-                # Update project counters would be handled separately
+                # Update project counters
+                project = await db.execute(select(Project).where(Project.id == lot.project_id))
+                project = project.scalar_one_or_none()
+                if project:
+                    if old_status == SaleStatus.RESERVED:
+                        project.available_lots = max(0, project.available_lots - 1)
+                        project.sold_lots = (project.sold_lots or 0) + 1
+                    else:
+                        project.sold_lots = (project.sold_lots or 0) + 1
         elif new_status == SaleStatus.CANCELLED:
-            result = await db.execute(select(Lot).where(Lot.id == sale.lot_id))
-            lot = result.scalar_one_or_none()
-            if lot:
+            # Liberate the lot
+            if old_status == SaleStatus.RESERVED:
                 lot.status = LotStatus.AVAILABLE
                 lot.sold_to_client_id = None
+                project = await db.execute(select(Project).where(Project.id == lot.project_id))
+                project = project.scalar_one_or_none()
+                if project:
+                    project.available_lots = min(project.total_lots, project.available_lots + 1)
+            elif old_status == SaleStatus.PAID:
+                lot.status = LotStatus.AVAILABLE
+                lot.sold_to_client_id = None
+                project = await db.execute(select(Project).where(Project.id == lot.project_id))
+                project = project.scalar_one_or_none()
+                if project:
+                    project.sold_lots = max(0, (project.sold_lots or 0) - 1)
+                    project.available_lots = min(project.total_lots, project.available_lots + 1)
 
     await db.commit()
     await db.refresh(sale)

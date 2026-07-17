@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { dashboardApi } from '../lib/api';
-import { Building2, Map, Users, ShoppingCart, TrendingUp, DollarSign, Layers, Target } from 'lucide-react';
+import { Building2, Map, Users, ShoppingCart, TrendingUp, DollarSign, Layers, Target, Bookmark } from 'lucide-react';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
@@ -28,11 +28,11 @@ export default function DashboardPage() {
     { label: 'Proyectos', value: stats?.total_projects || 0, icon: Building2, color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/20' },
     { label: 'Lotes Totales', value: stats?.total_lots || 0, icon: Layers, color: 'from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-500/20' },
     { label: 'Lotes Disponibles', value: stats?.available_lots || 0, icon: Map, color: 'from-green-500 to-green-600', shadow: 'shadow-green-500/20' },
+    { label: 'Reservas', value: stats?.reserved_lots || 0, icon: Bookmark, color: 'from-amber-500 to-amber-600', shadow: 'shadow-amber-500/20' },
     { label: 'Clientes', value: stats?.total_clients || 0, icon: Users, color: 'from-violet-500 to-violet-600', shadow: 'shadow-violet-500/20' },
-    { label: 'Ventas Totales', value: stats?.total_sales || 0, icon: ShoppingCart, color: 'from-orange-500 to-orange-600', shadow: 'shadow-orange-500/20' },
+    { label: 'Ventas (pagadas)', value: stats?.total_sales || 0, icon: ShoppingCart, color: 'from-orange-500 to-orange-600', shadow: 'shadow-orange-500/20' },
     { label: 'Ventas del Mes', value: stats?.sales_this_month || 0, icon: TrendingUp, color: 'from-indigo-500 to-indigo-600', shadow: 'shadow-indigo-500/20' },
     { label: 'Ingresos Totales', value: `$${(stats?.total_revenue || 0).toLocaleString('es-MX')}`, icon: DollarSign, color: 'from-amber-500 to-amber-600', shadow: 'shadow-amber-500/20' },
-    { label: 'Ingresos del Mes', value: `$${(stats?.revenue_this_month || 0).toLocaleString('es-MX')}`, icon: DollarSign, color: 'from-yellow-500 to-yellow-500', shadow: 'shadow-yellow-500/20' },
     { label: 'Agentes', value: stats?.agents_count || 0, icon: Users, color: 'from-teal-500 to-teal-600', shadow: 'shadow-teal-500/20' },
   ];
 

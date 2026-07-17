@@ -70,8 +70,10 @@ async def get_dashboard_stats(
     )
     active_leads = result.scalar() or 0
 
-    # Sales
-    result = await db.execute(select(func.count(Sale.id)))
+    # Sales — only count PAID sales as real sales
+    result = await db.execute(
+        select(func.count(Sale.id)).where(Sale.status == SaleStatus.PAID)
+    )
     total_sales = result.scalar() or 0
 
     result = await db.execute(
@@ -81,18 +83,21 @@ async def get_dashboard_stats(
     )
     active_sales = result.scalar() or 0
 
-    result = await db.execute(select(func.coalesce(func.sum(Sale.sale_price), 0)))
+    # Revenue — only from PAID sales
+    result = await db.execute(
+        select(func.coalesce(func.sum(Sale.sale_price), 0)).where(Sale.status == SaleStatus.PAID)
+    )
     total_revenue = float(result.scalar() or 0)
 
-    # This month
+    # This month — only PAID
     start_of_month = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     result = await db.execute(
-        select(func.count(Sale.id)).where(Sale.created_at >= start_of_month)
+        select(func.count(Sale.id)).where(Sale.created_at >= start_of_month, Sale.status == SaleStatus.PAID)
     )
     sales_this_month = result.scalar() or 0
 
     result = await db.execute(
-        select(func.coalesce(func.sum(Sale.sale_price), 0)).where(Sale.created_at >= start_of_month)
+        select(func.coalesce(func.sum(Sale.sale_price), 0)).where(Sale.created_at >= start_of_month, Sale.status == SaleStatus.PAID)
     )
     revenue_this_month = float(result.scalar() or 0)
 

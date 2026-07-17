@@ -133,7 +133,7 @@ app.include_router(public_routes.router, prefix="/api/v1")
 # SPA catch-all: serve index.html for any non-API route
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    if full_path.startswith("api/"):
+    if full_path.startswith("api/") or "/api/" in full_path:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     index_path = frontend_dist / "index.html"
     if index_path.exists():

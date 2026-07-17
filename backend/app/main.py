@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.core.database import engine, Base, async_session_factory
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
-from app.api import auth, users, projects, lots, clients, sales, dashboard
+from app.api import auth, users, projects, lots, clients, sales, dashboard, public_routes
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,6 +121,7 @@ app.include_router(lots.router, prefix="/api/v1")
 app.include_router(clients.router, prefix="/api/v1")
 app.include_router(sales.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(public_routes.router, prefix="/api/v1")
 
 # SPA catch-all: serve index.html for any non-API route
 @app.get("/{full_path:path}")

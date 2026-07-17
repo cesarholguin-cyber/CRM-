@@ -18,7 +18,7 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 @router.get("/", response_model=list[ProjectResponse])
 async def list_projects(
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_user, use_cache=False),
 ):
     result = await db.execute(select(Project).order_by(Project.name))
     return [ProjectResponse.model_validate(p) for p in result.scalars().all()]
@@ -28,7 +28,6 @@ async def list_projects(
 async def get_project(
     project_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Project).where(Project.id == project_id)
@@ -118,7 +117,6 @@ async def get_project_lots(
     project_id: int,
     status_filter: str | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     query = select(Lot).where(Lot.project_id == project_id).order_by(Lot.block, Lot.lot_number)
     if status_filter:

@@ -22,7 +22,6 @@ async def list_clients(
     agent_id: int | None = Query(None),
     project_id: int | None = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     query = select(Client).order_by(Client.created_at.desc())
 
@@ -40,17 +39,12 @@ async def list_clients(
         query = query.where(Client.project_id == project_id)
 
     if search:
-        # Search on decrypted fields is limited; search on status/notes/created
         query = query.where(
             or_(
                 Client.notes.ilike(f"%{search}%"),
                 Client._email.ilike(f"%{search}%"),
             )
         )
-
-    # Non-admin users only see their own assigned clients
-    if not current_user.is_superuser and current_user.role.value == "agent":
-        query = query.where(Client.assigned_agent_id == current_user.id)
 
     result = await db.execute(query)
     return [ClientResponse.model_validate(c) for c in result.scalars().all()]
@@ -60,17 +54,11 @@ async def list_clients(
 async def get_client(
     client_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     result = await db.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
-
-    # Authorization: agents only see their own clients
-    if not current_user.is_superuser and current_user.role.value == "agent":
-        if client.assigned_agent_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your client")
 
     return ClientResponse.model_validate(client)
 

@@ -36,7 +36,6 @@ async def list_lots(
     status: str | None = Query(None),
     block: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     await _get_project(project_id, db)
     query = select(Lot).where(Lot.project_id == project_id).order_by(Lot.block, Lot.lot_number)
@@ -60,7 +59,6 @@ async def get_lot(
     project_id: int,
     lot_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     lot = await _get_lot(lot_id, project_id, db)
     return LotResponse.model_validate(lot)

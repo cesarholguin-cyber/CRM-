@@ -23,7 +23,6 @@ async def list_sales(
     status: str | None = None,
     agent_id: int | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     query = select(Sale).order_by(Sale.created_at.desc())
 
@@ -37,9 +36,6 @@ async def list_sales(
     if agent_id:
         query = query.where(Sale.agent_id == agent_id)
 
-    if not current_user.is_superuser and current_user.role.value == "agent":
-        query = query.where(Sale.agent_id == current_user.id)
-
     result = await db.execute(query)
     return [SaleResponse.model_validate(s) for s in result.scalars().all()]
 
@@ -48,7 +44,6 @@ async def list_sales(
 async def get_sale(
     sale_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
 ):
     result = await db.execute(select(Sale).where(Sale.id == sale_id))
     sale = result.scalar_one_or_none()

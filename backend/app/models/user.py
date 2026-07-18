@@ -6,9 +6,9 @@ import enum
 
 
 class UserRole(str, enum.Enum):
-    ADMIN = "admin"
-    SUPERVISOR = "supervisor"
-    EMPLOYEE = "employee"
+    ADMIN = "ADMIN"
+    SUPERVISOR = "SUPERVISOR"
+    EMPLOYEE = "EMPLOYEE"
 
 
 class User(Base):

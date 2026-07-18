@@ -45,8 +45,8 @@ async def lifespan(app: FastAPI):
                 is_superuser=True,
                 is_active=True,
             )
+            session.add(admin)
 
-            # Seed default supervisor
             supervisor = User(
                 email="supervisor@rfdesarrollos.com",
                 username="supervisor",
@@ -58,7 +58,6 @@ async def lifespan(app: FastAPI):
             )
             session.add(supervisor)
 
-            # Seed default employee
             employee = User(
                 email="employee@rfdesarrollos.com",
                 username="employee",
@@ -69,9 +68,8 @@ async def lifespan(app: FastAPI):
                 is_active=True,
             )
             session.add(employee)
-            session.add(admin)
             await session.commit()
-            logger.info("Default admin user created: admin@rfdesarrollos.com / Admin123!")
+            logger.info("Default users created")
         else:
             logger.info("Users already exist, skipping seed")
 

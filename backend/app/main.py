@@ -144,6 +144,48 @@ async def health_check():
     return {"status": "healthy", "app": settings.APP_NAME, "version": settings.VERSION}
 
 
+# Debug endpoint
+@app.get("/debug-login")
+async def debug_login():
+    import traceback
+    try:
+        from app.core.security import verify_password, create_access_token
+        from app.models.user import User, UserRole
+        from app.schemas.user import UserResponse
+        async with async_session_factory() as session:
+            from sqlalchemy import select
+            result = await session.execute(select(User).where(User.email == "admin@rfdesarrollos.com"))
+            user = result.scalar_one_or_none()
+            if not user:
+                return {"error": "user not found"}
+            
+            # Check password
+            pw_check = verify_password("Admin123!", user.hashed_password)
+            
+            # Check all fields
+            user_data = {c.name: getattr(user, c.name) for c in user.__table__.columns}
+            
+            # Try creating TokenResponse
+            access_token = create_access_token(user.id)
+            res = UserResponse.model_validate(user)
+            
+            return {
+                "user_found": True,
+                "password_match": pw_check,
+                "role": user.role.value,
+                "role_type": str(type(user.role)),
+                "totp_enabled": user.totp_enabled,
+                "totp_type": str(type(user.totp_enabled)),
+                "last_login": str(user.last_login),
+                "user_data_keys": list(user_data.keys()),
+                "raw_role": user_data.get("role"),
+                "token_ok": bool(access_token),
+                "user_response_created": True,
+            }
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+
 # Include routers
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")

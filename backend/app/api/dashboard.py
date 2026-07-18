@@ -10,7 +10,7 @@ from app.models.sale import Sale, SaleStatus
 from app.models.client import Client, ClientStatus
 from app.models.project import Project
 from app.models.user import User
-from app.api.deps import get_current_user
+from app.api.deps import get_current_admin
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -34,7 +34,7 @@ class DashboardStats(BaseModel):
 @router.get("/stats", response_model=DashboardStats)
 async def get_dashboard_stats(
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_admin),
 ):
     # Projects
     result = await db.execute(select(func.count(Project.id)))
@@ -104,7 +104,7 @@ async def get_dashboard_stats(
     # Agents
     from app.models.user import UserRole
     result = await db.execute(
-        select(func.count(User.id)).where(User.role.in_([UserRole.AGENT, UserRole.COORDINATOR]), User.is_active == True)
+        select(func.count(User.id)).where(User.role == UserRole.EMPLOYEE, User.is_active == True)
     )
     agents_count = result.scalar() or 0
 
@@ -134,7 +134,7 @@ class PipelineData(BaseModel):
 @router.get("/pipeline", response_model=list[PipelineData])
 async def get_pipeline_data(
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_admin),
 ):
     stages_data = []
     for status in SaleStatus:

@@ -11,10 +11,12 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center h-screen bg-rf-cream"><div className="animate-spin w-10 h-10 border-4 border-rf-green-600 border-t-transparent rounded-full" /></div>;
-  return user ? children : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/dashboard" />;
+  return children;
 }
 
 function AppRoutes() {
@@ -24,7 +26,7 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
       <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" />} />
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="dashboard" element={<ProtectedRoute allowedRoles={['admin']}><DashboardPage /></ProtectedRoute>} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="lots" element={<LotsPage />} />
         <Route path="clients" element={<ClientsPage />} />

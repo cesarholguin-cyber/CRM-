@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { salesApi, clientsApi, lotsApi, projectsApi } from '../lib/api';
-import { ShoppingCart, Plus, Search, TrendingUp, DollarSign, Calendar } from 'lucide-react';
+import { ShoppingCart, Plus, TrendingUp, DollarSign, Calendar, Sparkles } from 'lucide-react';
 
 const statusConfig = {
-  reserved: { label: 'Apartado', color: 'bg-amber-100 text-amber-700 border-amber-200', dot: 'bg-amber-500' },
-  option_signed: { label: 'Opción Firmada', color: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
-  contract_signed: { label: 'Contrato Firmado', color: 'bg-indigo-100 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
-  financing: { label: 'Financiamiento', color: 'bg-purple-100 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
-  paid: { label: 'Pagado', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
-  cancelled: { label: 'Cancelado', color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-500' },
-  reversed: { label: 'Reversado', color: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' },
+  reserved: { label: 'Apartado', color: 'bg-amber-100/80 text-amber-700 border-amber-200/50', dot: 'bg-amber-500' },
+  option_signed: { label: 'Opción Firmada', color: 'bg-blue-100/80 text-blue-700 border-blue-200/50', dot: 'bg-blue-500' },
+  contract_signed: { label: 'Contrato Firmado', color: 'bg-indigo-100/80 text-indigo-700 border-indigo-200/50', dot: 'bg-indigo-500' },
+  financing: { label: 'Financiamiento', color: 'bg-purple-100/80 text-purple-700 border-purple-200/50', dot: 'bg-purple-500' },
+  paid: { label: 'Pagado', color: 'bg-emerald-100/80 text-emerald-700 border-emerald-200/50', dot: 'bg-emerald-500' },
+  cancelled: { label: 'Cancelado', color: 'bg-red-100/80 text-red-700 border-red-200/50', dot: 'bg-red-500' },
+  reversed: { label: 'Reversado', color: 'bg-gray-100/80 text-gray-600 border-gray-200/50', dot: 'bg-gray-400' },
 };
 
 const pipelineStages = ['reserved', 'option_signed', 'contract_signed', 'financing', 'paid'];
@@ -89,7 +89,6 @@ export default function SalesPage() {
   };
 
   const findClientName = (id) => clients.find((c) => c.id === id)?.full_name || `Cliente #${id}`;
-
   const getSalesByStatus = (status) => sales.filter((s) => s.status === status);
 
   return (
@@ -98,25 +97,26 @@ export default function SalesPage() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-3xl font-bold text-rf-dark">Ventas</h1>
-            <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">{sales.length} total</span>
+            <span className="px-2.5 py-0.5 bg-amber-100/80 backdrop-blur-sm text-amber-700 rounded-full text-xs font-medium border border-amber-200/50 shadow-sm">{sales.length} total</span>
           </div>
           <p className="text-base text-rf-gray-light mt-1">Gestiona apartados, contratos y financiamiento</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:from-rf-green-700 hover:to-rf-green-600 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-sm font-medium shadow-md">
+        <button onClick={() => { resetForm(); setShowModal(true); }} className="relative overflow-hidden group bg-gradient-to-r from-rf-green-800 via-rf-green-700 to-rf-green-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:from-rf-green-700 hover:via-rf-green-600 hover:to-rf-green-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-sm font-medium shadow-md">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
           <Plus size={18} /> Nueva Venta
         </button>
       </div>
 
       {/* Filters + View toggle */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-100 mb-6 flex flex-wrap gap-3 items-center shadow-sm">
+      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-4 border border-white/30 shadow-sm mb-6 flex flex-wrap gap-3 items-center">
         <div className="flex gap-1.5 flex-wrap">
           {['', 'reserved', 'option_signed', 'contract_signed', 'financing', 'paid', 'cancelled'].map((s) => (
-            <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filter === s ? 'bg-rf-green-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}>
+            <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filter === s ? 'bg-rf-green-800 text-white shadow-md' : 'bg-gray-100/80 text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}>
               {s ? (statusConfig[s]?.label || s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())) : 'Todas'}
             </button>
           ))}
         </div>
-        <div className="ml-auto flex gap-1 bg-gray-100 p-0.5 rounded-lg">
+        <div className="ml-auto flex gap-1 bg-gray-100/80 p-0.5 rounded-lg">
           <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'list' ? 'bg-white text-rf-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
             Lista
           </button>
@@ -129,18 +129,18 @@ export default function SalesPage() {
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="relative">
-            <div className="w-12 h-12 border-4 border-rf-green-100 border-t-rf-green-800 rounded-full animate-spin" />
-            <div className="w-12 h-12 border-4 border-rf-green-200 border-t-rf-green-600 rounded-full animate-spin absolute inset-0" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+            <div className="w-14 h-14 border-[3px] border-rf-green-100/50 border-t-rf-green-800 rounded-full animate-spin" />
+            <div className="w-14 h-14 border-[3px] border-rf-green-200/30 border-t-rf-green-600 rounded-full animate-spin absolute inset-0" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
           </div>
         </div>
       ) : sales.length === 0 ? (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-16 border border-dashed border-gray-200 text-center animate-scale-in">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-rf-green-100 to-rf-green-50 flex items-center justify-center">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-16 border border-dashed border-white/50 text-center animate-scale-in">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-rf-green-100 to-rf-green-50 flex items-center justify-center shadow-lg">
             <ShoppingCart size={40} className="text-rf-green-400" />
           </div>
           <h3 className="text-xl font-semibold text-rf-dark mb-2">No hay ventas</h3>
           <p className="text-gray-400 mb-6">Registra tu primera venta para empezar a dar seguimiento</p>
-          <button onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex items-center gap-2 bg-rf-green-800 text-white px-5 py-2.5 rounded-xl hover:bg-rf-green-700 transition-all text-sm font-medium shadow-md">
+          <button onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex items-center gap-2 bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white px-5 py-2.5 rounded-xl hover:from-rf-green-700 hover:to-rf-green-600 hover:shadow-lg transition-all text-sm font-medium shadow-md">
             <Plus size={18} /> Registrar Primera Venta
           </button>
         </div>
@@ -160,13 +160,13 @@ export default function SalesPage() {
                 </div>
                 <div className="space-y-2 min-h-[200px]">
                   {stageSales.length === 0 ? (
-                    <div className="bg-gray-50/50 border border-dashed border-gray-200 rounded-xl p-4 text-center">
+                    <div className="bg-gray-50/50 backdrop-blur-sm border border-dashed border-gray-200/50 rounded-xl p-4 text-center">
                       <p className="text-xs text-gray-400">Sin ventas</p>
                     </div>
                   ) : stageSales.map((sale, i) => (
                     <div
                       key={sale.id}
-                      className="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+                      className="bg-white rounded-xl p-4 border border-gray-100/80 hover:shadow-md hover:border-gray-200 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
                       style={{ animation: `scale-in 0.3s ease-out ${i * 50}ms both` }}
                     >
                       <div className="flex items-start justify-between mb-2">
@@ -175,7 +175,7 @@ export default function SalesPage() {
                       </div>
                       <p className="text-xs text-gray-400 mb-1">{findClientName(sale.client_id)}</p>
                       {sale.monthly_payment && (
-                        <div className="flex items-center gap-3 text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-50">
+                        <div className="flex items-center gap-3 text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-50/50">
                           <span className="flex items-center gap-1"><DollarSign size={10} /> ${sale.monthly_payment.toLocaleString('es-MX')}/mes</span>
                           <span className="flex items-center gap-1"><Calendar size={10} /> {sale.payment_terms_months} meses</span>
                         </div>
@@ -194,12 +194,12 @@ export default function SalesPage() {
             return (
               <div
                 key={sale.id}
-                className="group bg-white/80 backdrop-blur-sm rounded-xl p-5 border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 hover:-translate-y-0.5"
+                className="group bg-white/70 backdrop-blur-xl rounded-xl p-5 border border-white/30 hover:shadow-md hover:border-gray-200/80 transition-all duration-300 hover:-translate-y-0.5"
                 style={{ animation: `slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) ${i * 50}ms both` }}
               >
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-100 to-rf-green-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-100/80 to-rf-green-50/80 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                       <ShoppingCart size={18} className="text-rf-green-600" />
                     </div>
                     <div>
@@ -208,7 +208,7 @@ export default function SalesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border backdrop-blur-sm ${cfg.color}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                       {cfg.label}
                     </span>
@@ -216,7 +216,7 @@ export default function SalesPage() {
                   </div>
                 </div>
                 {sale.monthly_payment && (
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100/50 text-xs text-gray-400">
                     <span className="flex items-center gap-1.5"><DollarSign size={12} /> Pago mensual: <strong className="text-rf-dark">${sale.monthly_payment.toLocaleString('es-MX')}</strong></span>
                     <span className="flex items-center gap-1.5"><Calendar size={12} /> Plazo: <strong className="text-rf-dark">{sale.payment_terms_months} meses</strong></span>
                   </div>
@@ -231,11 +231,19 @@ export default function SalesPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-rf-dark mb-6">Nueva Venta</h2>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-800 to-rf-green-700 flex items-center justify-center shadow-lg">
+                <Sparkles size={18} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-rf-dark">Nueva Venta</h2>
+                <p className="text-xs text-rf-gray-light mt-0.5">Registra una nueva operación de venta</p>
+              </div>
+            </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1.5">Cliente</label>
-                <select value={form.client_id} onChange={(e) => setForm({...form, client_id: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all" required>
+                <select value={form.client_id} onChange={(e) => setForm({...form, client_id: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required>
                   <option value="">Seleccionar cliente</option>
                   {clients.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
                 </select>
@@ -243,7 +251,7 @@ export default function SalesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1.5">Proyecto</label>
-                <select value={selectedProject} onChange={(e) => { setSelectedProject(e.target.value); loadLots(e.target.value); }} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all">
+                <select value={selectedProject} onChange={(e) => { setSelectedProject(e.target.value); loadLots(e.target.value); }} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md">
                   <option value="">Seleccionar proyecto</option>
                   {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
@@ -251,18 +259,19 @@ export default function SalesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-500 mb-1.5">Lote</label>
-                <select value={form.lot_id} onChange={(e) => setForm({...form, lot_id: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all" required>
+                <select value={form.lot_id} onChange={(e) => setForm({...form, lot_id: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required>
                   <option value="">Seleccionar lote</option>
                   {lots.map((l) => <option key={l.id} value={l.id}>Lote #{l.lot_number} - {l.area_sqm}m² - ${(l.total_price || 0).toLocaleString('es-MX')}</option>)}
                 </select>
               </div>
 
-              <button type="button" onClick={handleQuote} className="w-full py-2.5 bg-gradient-to-r from-rf-gold to-rf-gold-dark text-white rounded-xl hover:from-rf-gold-dark hover:to-rf-gold hover:shadow-lg transition-all duration-300 text-sm font-medium shadow-md">
+              <button type="button" onClick={handleQuote} className="relative overflow-hidden group w-full py-2.5 bg-gradient-to-r from-rf-gold to-rf-gold-dark text-white rounded-xl hover:from-rf-gold-dark hover:to-rf-gold hover:shadow-lg transition-all duration-300 text-sm font-medium shadow-md">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                 Calcular cotización
               </button>
 
               {quote && (
-                <div className="bg-gradient-to-br from-rf-green-50 to-white rounded-xl p-4 border border-rf-green-100 space-y-2 text-sm animate-scale-in">
+                <div className="bg-gradient-to-br from-rf-green-50/80 to-white/80 backdrop-blur-sm rounded-xl p-4 border border-rf-green-100/50 space-y-2 text-sm animate-scale-in">
                   <p className="font-semibold text-rf-dark flex items-center gap-2 mb-3">
                     <TrendingUp size={16} className="text-rf-green-600" />
                     Cotización
@@ -271,7 +280,7 @@ export default function SalesPage() {
                     <span className="text-gray-500">Precio total:</span><span className="font-medium text-right text-rf-dark">${quote.total_price.toLocaleString('es-MX')}</span>
                     <span className="text-gray-500">Enganche (30%):</span><span className="font-medium text-right text-rf-dark">${quote.down_payment.toLocaleString('es-MX')}</span>
                     <span className="text-gray-500">Mensualidades:</span><span className="font-medium text-right text-rf-dark">${quote.monthly_payment.toLocaleString('es-MX')} x {quote.payment_terms_months} meses</span>
-                    <span className="text-gray-500 border-t border-rf-green-100 pt-1">Total a pagar:</span><span className="font-bold text-rf-green-800 text-right border-t border-rf-green-100 pt-1">${quote.total_to_pay.toLocaleString('es-MX')}</span>
+                    <span className="text-gray-500 border-t border-rf-green-100/50 pt-1">Total a pagar:</span><span className="font-bold text-rf-green-800 text-right border-t border-rf-green-100/50 pt-1">${quote.total_to_pay.toLocaleString('es-MX')}</span>
                   </div>
                 </div>
               )}
@@ -279,22 +288,22 @@ export default function SalesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1.5">Precio de venta</label>
-                  <input type="number" value={form.sale_price} onChange={(e) => setForm({...form, sale_price: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all" required />
+                  <input type="number" value={form.sale_price} onChange={(e) => setForm({...form, sale_price: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1.5">Enganche</label>
-                  <input type="number" value={form.down_payment} onChange={(e) => setForm({...form, down_payment: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all" />
+                  <input type="number" value={form.down_payment} onChange={(e) => setForm({...form, down_payment: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1.5">Plazo (meses)</label>
-                  <input type="number" value={form.payment_terms_months} onChange={(e) => setForm({...form, payment_terms_months: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all" />
+                  <input type="number" value={form.payment_terms_months} onChange={(e) => setForm({...form, payment_terms_months: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1.5">Interés anual (%)</label>
-                  <input type="number" value={form.interest_rate} onChange={(e) => setForm({...form, interest_rate: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 focus:bg-white transition-all" />
+                  <input type="number" value={form.interest_rate} onChange={(e) => setForm({...form, interest_rate: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" />
                 </div>
               </div>
 

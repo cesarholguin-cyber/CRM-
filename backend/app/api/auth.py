@@ -19,7 +19,7 @@ from app.schemas.user import (
     LoginRequest, TokenResponse, ChangePasswordRequest,
     Setup2FAResponse, Verify2FARequest,
 )
-from app.api.deps import get_current_user, get_request_info
+from app.api.deps import get_current_user, get_current_superuser, get_request_info
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -108,7 +108,11 @@ async def refresh_token(request: Request, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(
+    user_data: UserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_superuser),
+):
     # Check existing
     result = await db.execute(select(User).where(
         (User.email == user_data.email) | (User.username == user_data.username)

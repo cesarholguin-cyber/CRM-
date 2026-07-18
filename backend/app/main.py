@@ -45,6 +45,30 @@ async def lifespan(app: FastAPI):
                 is_superuser=True,
                 is_active=True,
             )
+
+            # Seed default supervisor
+            supervisor = User(
+                email="supervisor@rfdesarrollos.com",
+                username="supervisor",
+                hashed_password=get_password_hash("Supervisor123!"),
+                full_name="Supervisor",
+                role=UserRole.SUPERVISOR,
+                is_superuser=True,
+                is_active=True,
+            )
+            session.add(supervisor)
+
+            # Seed default employee
+            employee = User(
+                email="employee@rfdesarrollos.com",
+                username="employee",
+                hashed_password=get_password_hash("Employee123!"),
+                full_name="Empleado",
+                role=UserRole.EMPLOYEE,
+                is_superuser=False,
+                is_active=True,
+            )
+            session.add(employee)
             session.add(admin)
             await session.commit()
             logger.info("Default admin user created: admin@rfdesarrollos.com / Admin123!")

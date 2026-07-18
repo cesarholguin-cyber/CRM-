@@ -7,8 +7,8 @@ import enum
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
-    COORDINATOR = "coordinator"
-    AGENT = "agent"
+    SUPERVISOR = "supervisor"
+    EMPLOYEE = "employee"
 
 
 class User(Base):
@@ -20,7 +20,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
     phone = Column(String(50), nullable=True)
-    role = Column(SAEnum(UserRole), default=UserRole.AGENT, nullable=False)
+    role = Column(SAEnum(UserRole), default=UserRole.EMPLOYEE, nullable=False)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
 

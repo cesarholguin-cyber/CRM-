@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
     full_name: str = Field(..., min_length=1, max_length=255)
     phone: Optional[str] = None
-    role: UserRole = UserRole.AGENT
+    role: UserRole = UserRole.EMPLOYEE
 
 
 class UserUpdate(BaseModel):

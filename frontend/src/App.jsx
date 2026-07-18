@@ -26,7 +26,7 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
       <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" />} />
-        <Route path="dashboard" element={<ProtectedRoute allowedRoles={['admin']}><DashboardPage /></ProtectedRoute>} />
+        <Route path="dashboard" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardPage /></ProtectedRoute>} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="lots" element={<LotsPage />} />
         <Route path="clients" element={<ClientsPage />} />

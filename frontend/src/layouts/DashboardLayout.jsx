@@ -7,14 +7,14 @@ import {
 } from 'lucide-react';
 
 const allNavItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['admin'] },
-  { icon: Building2, label: 'Proyectos', path: '/projects', roles: ['admin', 'supervisor', 'employee'] },
-  { icon: Map, label: 'Inventario de Lotes', path: '/lots', roles: ['admin', 'supervisor', 'employee'] },
-  { icon: Users, label: 'Clientes', path: '/clients', roles: ['admin', 'supervisor', 'employee'] },
-  { icon: ShoppingCart, label: 'Ventas', path: '/sales', roles: ['admin', 'supervisor', 'employee'] },
-  { icon: Bookmark, label: 'Apartados', path: '/apartados', roles: ['admin', 'supervisor', 'employee'] },
-  { icon: BarChart3, label: 'Reportes', path: '/reports', roles: ['admin', 'supervisor', 'employee'] },
-  { icon: Settings, label: 'Configuración', path: '/settings', roles: ['admin', 'supervisor', 'employee'] },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['ADMIN'] },
+  { icon: Building2, label: 'Proyectos', path: '/projects', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+  { icon: Map, label: 'Inventario de Lotes', path: '/lots', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+  { icon: Users, label: 'Clientes', path: '/clients', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+  { icon: ShoppingCart, label: 'Ventas', path: '/sales', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+  { icon: Bookmark, label: 'Apartados', path: '/apartados', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+  { icon: BarChart3, label: 'Reportes', path: '/reports', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+  { icon: Settings, label: 'Configuración', path: '/settings', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
 ];
 
 export default function DashboardLayout() {

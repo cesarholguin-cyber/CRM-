@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ email: '', username: '', password: '', full_name: '', phone: '', role: 'employee' });
 
-  const canManageUsers = user?.role === 'admin' || user?.role === 'supervisor';
+  const canManageUsers = user?.role === 'ADMIN' || user?.role === 'SUPERVISOR';
 
   const handleChangePassword = async (e) => {
     e.preventDefault();

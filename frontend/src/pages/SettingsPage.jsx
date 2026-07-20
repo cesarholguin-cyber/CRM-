@@ -58,6 +58,7 @@ export default function SettingsPage() {
     setErr('');
     setMsg('');
     try {
+      console.log('Creating user with payload:', JSON.stringify(createForm));
       await usersApi.create(createForm);
       setShowCreate(false);
       setCreateForm({ email: '', username: '', password: '', full_name: '', phone: '', role: 'PROMOTOR' });

@@ -12,6 +12,40 @@ from app.api.deps import get_current_user, get_current_admin, get_request_info
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: UserCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+):
+    existing = await db.execute(
+        select(User).where((User.email == user_data.email) | (User.username == user_data.username))
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email or username already registered")
+
+    user = User(
+        email=user_data.email,
+        username=user_data.username,
+        hashed_password=get_password_hash(user_data.password),
+        full_name=user_data.full_name,
+        phone=user_data.phone,
+        role=user_data.role,
+        is_active=True,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+
+    write_audit_log(
+        current_user.id, current_user.email, "USER_CREATED", "user", user.id,
+        new_values={"email": user.email, "username": user.username, "role": user.role.value},
+        **get_request_info(request),
+    )
+    return UserResponse.model_validate(user)
+
+
 @router.get("/", response_model=list[UserResponse])
 async def list_users(
     db: AsyncSession = Depends(get_db),

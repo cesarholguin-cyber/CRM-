@@ -31,6 +31,17 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created/verified")
 
+    # Migrate old roles to new roles
+    async with async_session_factory() as session:
+        from sqlalchemy import select, func, update
+        from sqlalchemy import text as sa_text
+        # Fix old role values in database
+        await session.execute(
+            sa_text("UPDATE users SET role = 'PROMOTOR' WHERE role IN ('EMPLOYEE', 'SUPERVISOR')")
+        )
+        await session.commit()
+        logger.info("Old roles migrated to PROMOTOR")
+
     # Seed default admin user if none exist
     async with async_session_factory() as session:
         from sqlalchemy import select, func

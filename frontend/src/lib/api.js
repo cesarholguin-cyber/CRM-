@@ -58,7 +58,7 @@ export const usersApi = {
   list: () => api.get('/users'),
   agents: () => api.get('/users/agents'),
   get: (id) => api.get(`/users/${id}`),
-  create: (data) => api.post('/auth/register', data),
+  create: (data) => api.post('/users', data),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
 };

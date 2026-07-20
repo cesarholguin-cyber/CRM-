@@ -53,19 +53,26 @@ export default function SettingsPage() {
     if (canManageUsers && tab === 'users') loadUsers();
   }, [tab]);
 
+  const [createErr, setCreateErr] = useState('');
+
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    setErr('');
-    setMsg('');
+    setCreateErr('');
     try {
-      console.log('Creating user with payload:', JSON.stringify(createForm));
-      await usersApi.create(createForm);
+      const payload = { ...createForm };
+      if (!payload.phone) delete payload.phone;
+      await usersApi.create(payload);
       setShowCreate(false);
       setCreateForm({ email: '', username: '', password: '', full_name: '', phone: '', role: 'PROMOTOR' });
       setMsg('Usuario creado exitosamente');
       await loadUsers();
     } catch (err) {
-      setErr(err.response?.data?.detail || 'Error al crear usuario');
+      const detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        setCreateErr(detail.map(d => d.msg).join(', '));
+      } else {
+        setCreateErr(detail || 'Error al crear usuario');
+      }
     }
   };
 
@@ -213,6 +220,7 @@ export default function SettingsPage() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
               <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-2xl max-w-md w-full animate-scale-in" onClick={(e) => e.stopPropagation()}>
                 <h3 className="text-lg font-semibold text-rf-dark mb-4">Nuevo Usuario</h3>
+                {createErr && <div className="bg-red-50/80 backdrop-blur-sm text-red-600 px-4 py-3 rounded-xl text-sm mb-4 border border-red-200/50">{createErr}</div>}
                 <form onSubmit={handleCreateUser} className="space-y-3">
                   <input placeholder="Nombre completo" value={createForm.full_name} onChange={(e) => setCreateForm({...createForm, full_name: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" required />
                   <input placeholder="Email" type="email" value={createForm.email} onChange={(e) => setCreateForm({...createForm, email: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" required />

@@ -31,16 +31,29 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created/verified")
 
-    # Migrate old roles to new roles
+    # Migrate old enum and role values
     async with async_session_factory() as session:
-        from sqlalchemy import select, func, update
         from sqlalchemy import text as sa_text
-        # Fix old role values in database
-        await session.execute(
-            sa_text("UPDATE users SET role = 'PROMOTOR' WHERE role IN ('EMPLOYEE', 'SUPERVISOR')")
-        )
+        # Create new enum type and migrate
+        await session.execute(sa_text("""
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole_new') THEN
+                    CREATE TYPE userrole_new AS ENUM ('ADMIN', 'PROMOTOR');
+                END IF;
+            END $$;
+        """))
+        await session.execute(sa_text("""
+            ALTER TABLE users ALTER COLUMN role TYPE userrole_new
+                USING CASE
+                    WHEN role::text IN ('EMPLOYEE', 'SUPERVISOR') THEN 'PROMOTOR'::userrole_new
+                    WHEN role::text = 'ADMIN' THEN 'ADMIN'::userrole_new
+                    ELSE 'PROMOTOR'::userrole_new
+                END
+        """))
+        await session.execute(sa_text("DROP TYPE IF EXISTS userrole CASCADE"))
+        await session.execute(sa_text("ALTER TYPE userrole_new RENAME TO userrole"))
         await session.commit()
-        logger.info("Old roles migrated to PROMOTOR")
+        logger.info("Enum migrated to ADMIN/PROMOTOR only")
 
     # Seed default admin user if none exist
     async with async_session_factory() as session:

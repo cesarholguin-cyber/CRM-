@@ -19,7 +19,7 @@ from app.schemas.user import (
     LoginRequest, TokenResponse, ChangePasswordRequest,
     Setup2FAResponse, Verify2FARequest,
 )
-from app.api.deps import get_current_user, get_current_superuser, get_request_info
+from app.api.deps import get_current_user, get_current_admin, get_request_info
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -111,7 +111,7 @@ async def refresh_token(request: Request, db: AsyncSession = Depends(get_db)):
 async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_admin),
 ):
     # Check existing
     result = await db.execute(select(User).where(

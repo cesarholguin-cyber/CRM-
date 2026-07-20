@@ -9,7 +9,7 @@ from app.models.project import Project, ProjectStatus
 from app.models.lot import Lot, LotStatus
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.schemas.lot import LotResponse
-from app.api.deps import get_current_user, get_current_superuser, get_request_info, role_required
+from app.api.deps import get_current_user, get_current_admin, get_request_info, role_required
 from app.models.user import UserRole
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -42,7 +42,7 @@ async def create_project(
     project_data: ProjectCreate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     # Check slug uniqueness
     result = await db.execute(select(Project).where(Project.slug == project_data.slug))
@@ -67,7 +67,7 @@ async def update_project(
     project_data: ProjectUpdate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
@@ -94,7 +94,7 @@ async def delete_project(
     project_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()

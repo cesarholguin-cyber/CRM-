@@ -7,7 +7,7 @@ from app.core.audit import write_audit_log
 from app.models.project import Project
 from app.models.lot import Lot, LotStatus
 from app.schemas.lot import LotCreate, LotUpdate, LotResponse, LotBulkCreate
-from app.api.deps import get_current_user, get_current_superuser, get_request_info
+from app.api.deps import get_current_user, get_current_admin, get_request_info
 
 router = APIRouter(prefix="/projects/{project_id}/lots", tags=["Lots"])
 
@@ -70,7 +70,7 @@ async def create_lot(
     lot_data: LotCreate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     project = await _get_project(project_id, db)
 
@@ -112,7 +112,7 @@ async def bulk_create_lots(
     bulk_data: LotBulkCreate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     project = await _get_project(project_id, db)
     created = []
@@ -151,7 +151,7 @@ async def update_lot(
     lot_data: LotUpdate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     lot = await _get_lot(lot_id, project_id, db)
     old_values = {}
@@ -181,7 +181,7 @@ async def delete_lot(
     lot_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     lot = await _get_lot(lot_id, project_id, db)
     if lot.status != LotStatus.AVAILABLE:

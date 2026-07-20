@@ -7,7 +7,7 @@ from app.core.security import get_password_hash
 from app.core.audit import write_audit_log
 from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
-from app.api.deps import get_current_user, get_current_superuser, get_request_info
+from app.api.deps import get_current_user, get_current_admin, get_request_info
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.get("/", response_model=list[UserResponse])
 async def list_users(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_admin),
 ):
     result = await db.execute(select(User).order_by(User.full_name))
     return [UserResponse.model_validate(u) for u in result.scalars().all()]
@@ -36,7 +36,7 @@ async def list_agents(
 async def get_user(
     user_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_admin),
 ):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -51,7 +51,7 @@ async def update_user(
     update_data: UserUpdate,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_admin),
 ):
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -77,7 +77,7 @@ async def delete_user(
     user_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_admin),
 ):
     if user_id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete yourself")

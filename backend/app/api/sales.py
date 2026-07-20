@@ -14,7 +14,7 @@ from app.schemas.sale import (
     PaymentPlanResponse, PaymentCreate, PaymentResponse,
     QuoteRequest, QuoteResponse,
 )
-from app.api.deps import get_current_user, get_current_superuser, get_request_info
+from app.api.deps import get_current_user, get_current_admin, get_request_info
 
 router = APIRouter(prefix="/sales", tags=["Sales"])
 

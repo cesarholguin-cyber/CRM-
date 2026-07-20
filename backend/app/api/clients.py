@@ -10,7 +10,7 @@ from app.schemas.client import (
     ClientCreate, ClientUpdate, ClientResponse,
     InteractionCreate, InteractionResponse,
 )
-from app.api.deps import get_current_user, get_current_superuser, get_request_info
+from app.api.deps import get_current_user, get_current_admin, get_request_info
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
@@ -128,7 +128,7 @@ async def delete_client(
     client_id: int,
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_superuser),
+    current_user = Depends(get_current_admin),
 ):
     result = await db.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()

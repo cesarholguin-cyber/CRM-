@@ -47,27 +47,16 @@ async def lifespan(app: FastAPI):
             )
             session.add(admin)
 
-            supervisor = User(
-                email="supervisor@rfdesarrollos.com",
-                username="supervisor",
-                hashed_password=get_password_hash("Supervisor123!"),
-                full_name="Supervisor",
-                role=UserRole.SUPERVISOR,
-                is_superuser=True,
-                is_active=True,
-            )
-            session.add(supervisor)
-
-            employee = User(
-                email="employee@rfdesarrollos.com",
-                username="employee",
-                hashed_password=get_password_hash("Employee123!"),
-                full_name="Empleado",
-                role=UserRole.EMPLOYEE,
+            promotor = User(
+                email="promotor@rfdesarrollos.com",
+                username="promotor",
+                hashed_password=get_password_hash("Promotor123!"),
+                full_name="Promotor",
+                role=UserRole.PROMOTOR,
                 is_superuser=False,
                 is_active=True,
             )
-            session.add(employee)
+            session.add(promotor)
             await session.commit()
             logger.info("Default users created")
         else:

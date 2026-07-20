@@ -104,7 +104,7 @@ async def get_dashboard_stats(
     # Agents
     from app.models.user import UserRole
     result = await db.execute(
-        select(func.count(User.id)).where(User.role == UserRole.EMPLOYEE, User.is_active == True)
+        select(func.count(User.id)).where(User.role == UserRole.PROMOTOR, User.is_active == True)
     )
     agents_count = result.scalar() or 0
 

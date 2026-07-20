@@ -13,9 +13,9 @@ export default function SettingsPage() {
   // User management
   const [userList, setUserList] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({ email: '', username: '', password: '', full_name: '', phone: '', role: 'employee' });
+  const [createForm, setCreateForm] = useState({ email: '', username: '', password: '', full_name: '', phone: '', role: 'PROMOTOR' });
 
-  const canManageUsers = user?.role === 'ADMIN' || user?.role === 'SUPERVISOR';
+  const canManageUsers = user?.role === 'ADMIN';
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -52,7 +52,7 @@ export default function SettingsPage() {
     try {
       await usersApi.create(createForm);
       setShowCreate(false);
-      setCreateForm({ email: '', username: '', password: '', full_name: '', phone: '', role: 'employee' });
+      setCreateForm({ email: '', username: '', password: '', full_name: '', phone: '', role: 'PROMOTOR' });
       await loadUsers();
     } catch (err) {
       setErr(err.response?.data?.detail || 'Error al crear usuario');
@@ -77,15 +77,14 @@ export default function SettingsPage() {
 
   const roleBadge = (role) => {
     const styles = {
-      admin: 'bg-purple-100 text-purple-700 border-purple-200',
-      supervisor: 'bg-blue-100 text-blue-700 border-blue-200',
-      employee: 'bg-gray-100 text-gray-600 border-gray-200',
+      ADMIN: 'bg-purple-100 text-purple-700 border-purple-200',
+      PROMOTOR: 'bg-blue-100 text-blue-700 border-blue-200',
     };
     return styles[role] || 'bg-gray-100 text-gray-600';
   };
 
   const roleLabel = (role) => {
-    const labels = { admin: 'Admin', supervisor: 'Supervisor', employee: 'Empleado' };
+    const labels = { ADMIN: 'Admin', PROMOTOR: 'Promotor' };
     return labels[role] || role;
   };
 
@@ -211,9 +210,8 @@ export default function SettingsPage() {
                   <input placeholder="Contraseña" type="password" value={createForm.password} onChange={(e) => setCreateForm({...createForm, password: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" required minLength={8} />
                   <input placeholder="Teléfono (opcional)" value={createForm.phone} onChange={(e) => setCreateForm({...createForm, phone: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" />
                   <select value={createForm.role} onChange={(e) => setCreateForm({...createForm, role: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all">
-                    <option value="employee">Empleado</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="admin">Admin</option>
+                    <option value="PROMOTOR">Promotor</option>
+                    <option value="ADMIN">Admin</option>
                   </select>
                   <div className="flex gap-3 pt-2">
                     <button type="button" onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-rf-gray hover:bg-gray-50 transition-all text-sm font-medium">Cancelar</button>

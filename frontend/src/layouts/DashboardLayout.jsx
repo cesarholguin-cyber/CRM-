@@ -8,13 +8,13 @@ import {
 
 const allNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['ADMIN'] },
-  { icon: Building2, label: 'Proyectos', path: '/projects', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-  { icon: Map, label: 'Inventario de Lotes', path: '/lots', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-  { icon: Users, label: 'Clientes', path: '/clients', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-  { icon: ShoppingCart, label: 'Ventas', path: '/sales', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-  { icon: Bookmark, label: 'Apartados', path: '/apartados', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-  { icon: BarChart3, label: 'Reportes', path: '/reports', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
-  { icon: Settings, label: 'Configuración', path: '/settings', roles: ['ADMIN', 'SUPERVISOR', 'EMPLOYEE'] },
+  { icon: Building2, label: 'Proyectos', path: '/projects', roles: ['ADMIN', 'PROMOTOR'] },
+  { icon: Map, label: 'Inventario de Lotes', path: '/lots', roles: ['ADMIN', 'PROMOTOR'] },
+  { icon: Users, label: 'Clientes', path: '/clients', roles: ['ADMIN', 'PROMOTOR'] },
+  { icon: ShoppingCart, label: 'Ventas', path: '/sales', roles: ['ADMIN', 'PROMOTOR'] },
+  { icon: Bookmark, label: 'Apartados', path: '/apartados', roles: ['ADMIN', 'PROMOTOR'] },
+  { icon: BarChart3, label: 'Reportes', path: '/reports', roles: ['ADMIN'] },
+  { icon: Settings, label: 'Configuración', path: '/settings', roles: ['ADMIN', 'PROMOTOR'] },
 ];
 
 export default function DashboardLayout() {
@@ -125,7 +125,7 @@ export default function DashboardLayout() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-white/90 truncate">{user.full_name}</p>
-                <p className="text-[10px] text-white/30 uppercase tracking-wider">{user.role === 'admin' ? 'Admin' : user.role === 'supervisor' ? 'Supervisor' : 'Empleado'}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-wider">{user.role === 'ADMIN' ? 'Admin' : 'Promotor'}</p>
               </div>
             </div>
           )}

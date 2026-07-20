@@ -27,7 +27,7 @@ async def list_agents(
     current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(User).where(User.role.in_([UserRole.EMPLOYEE, UserRole.SUPERVISOR])).order_by(User.full_name)
+        select(User).where(User.role == UserRole.PROMOTOR).order_by(User.full_name)
     )
     return [UserResponse.model_validate(u) for u in result.scalars().all()]
 

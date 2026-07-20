@@ -35,11 +35,18 @@ export default function SettingsPage() {
     }
   };
 
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   const loadUsers = async () => {
+    setLoadingUsers(true);
     try {
       const res = await usersApi.list();
       setUserList(res.data);
-    } catch {}
+    } catch (err) {
+      setErr(err.response?.data?.detail || 'Error al cargar usuarios');
+    } finally {
+      setLoadingUsers(false);
+    }
   };
 
   useEffect(() => {
@@ -49,10 +56,12 @@ export default function SettingsPage() {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setErr('');
+    setMsg('');
     try {
       await usersApi.create(createForm);
       setShowCreate(false);
       setCreateForm({ email: '', username: '', password: '', full_name: '', phone: '', role: 'PROMOTOR' });
+      setMsg('Usuario creado exitosamente');
       await loadUsers();
     } catch (err) {
       setErr(err.response?.data?.detail || 'Error al crear usuario');

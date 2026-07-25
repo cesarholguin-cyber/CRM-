@@ -40,14 +40,9 @@ async def get_dashboard_stats(
     result = await db.execute(select(func.count(Project.id)))
     total_projects = result.scalar() or 0
 
-    # Lots
-    result = await db.execute(select(func.count(Lot.id)))
-    total_lots = result.scalar() or 0
-
-    result = await db.execute(
-        select(func.count(Lot.id)).where(Lot.status == LotStatus.AVAILABLE)
-    )
-    available_lots = result.scalar() or 0
+    # Lots — use Project.total_lots as authoritative total
+    result = await db.execute(select(func.coalesce(func.sum(Project.total_lots), 0)))
+    total_lots = int(result.scalar() or 0)
 
     result = await db.execute(
         select(func.count(Lot.id)).where(Lot.status == LotStatus.RESERVED)
@@ -58,6 +53,8 @@ async def get_dashboard_stats(
         select(func.count(Lot.id)).where(Lot.status == LotStatus.SOLD)
     )
     sold_lots = result.scalar() or 0
+
+    available_lots = total_lots - reserved_lots - sold_lots
 
     # Clients
     result = await db.execute(select(func.count(Client.id)))

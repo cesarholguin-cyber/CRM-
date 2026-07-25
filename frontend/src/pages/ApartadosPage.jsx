@@ -63,33 +63,49 @@ export default function ApartadosPage() {
     return diff;
   };
 
-  const handleMarkPaid = async (saleId) => {
+  const handleMarkPaid = async (saleIds) => {
     try {
-      await salesApi.update(saleId, { status: 'paid' });
-      setReservations((prev) => prev.filter((s) => s.id !== saleId));
+      await Promise.all(saleIds.map((id) => salesApi.update(id, { status: 'paid' })));
+      setReservations((prev) => prev.filter((s) => !saleIds.includes(s.id)));
       setConfirmAction(null);
     } catch (err) {
       alert(err.response?.data?.detail || 'Error al marcar como vendido');
     }
   };
 
-  const handleCancel = async (saleId) => {
+  const handleCancel = async (saleIds) => {
     try {
-      await salesApi.update(saleId, { status: 'cancelled' });
-      setReservations((prev) => prev.filter((s) => s.id !== saleId));
+      await Promise.all(saleIds.map((id) => salesApi.update(id, { status: 'cancelled' })));
+      setReservations((prev) => prev.filter((s) => !saleIds.includes(s.id)));
       setConfirmAction(null);
     } catch (err) {
       alert(err.response?.data?.detail || 'Error al cancelar apartado');
     }
   };
 
-  const filtered = reservations.filter((s) => {
+  // Group sales by client_id
+  const grouped = reservations.reduce((acc, sale) => {
+    const key = sale.client_id;
+    if (!acc[key]) {
+      acc[key] = { clientId: key, sales: [], earliestExpiry: null };
+    }
+    acc[key].sales.push(sale);
+    const exp = sale.reservation_expires_at ? new Date(sale.reservation_expires_at) : null;
+    if (exp && (!acc[key].earliestExpiry || exp < acc[key].earliestExpiry)) {
+      acc[key].earliestExpiry = exp;
+    }
+    return acc;
+  }, {});
+
+  const filtered = Object.values(grouped).filter((g) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    const name = findClientName(s.client_id).toLowerCase();
-    const lot = findLot(s.lot_id);
-    const lotNum = lot ? `lote ${lot.lot_number}` : '';
-    return name.includes(q) || lotNum.includes(q) || `#${s.id}`.includes(q);
+    const name = findClientName(g.clientId).toLowerCase();
+    const lotNums = g.sales.map((s) => {
+      const l = findLot(s.lot_id);
+      return l ? `lote ${l.lot_number}` : '';
+    }).join(' ');
+    return name.includes(q) || lotNums.includes(q);
   });
 
   return (
@@ -100,7 +116,7 @@ export default function ApartadosPage() {
             <div className="w-1 h-7 rounded-full bg-gradient-to-b from-rf-green-800 to-rf-green-400 animate-stagger-accent" />
             <h1 className="text-3xl font-bold text-rf-dark dark:text-gray-100">Apartados</h1>
             <span className="px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50">
-              {reservations.length} activos
+              {Object.keys(grouped).length} clientes · {reservations.length} lotes
             </span>
           </div>
           <p className="text-base text-rf-gray-light dark:text-gray-500 mt-1 ml-4">Reservaciones de lotes desde la web</p>
@@ -140,14 +156,19 @@ export default function ApartadosPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((sale, i) => {
-            const lot = findLot(sale.lot_id);
-            const client = findClient(sale.client_id);
-            const days = daysRemaining(sale.reservation_expires_at);
+          {filtered.map((group, i) => {
+            const client = findClient(group.clientId);
+            const saleIds = group.sales.map((s) => s.id);
+            const days = daysRemaining(group.earliestExpiry?.toISOString());
             const cfg = statusConfig.reserved;
+            const lotInfos = group.sales.map((s) => findLot(s.lot_id)).filter(Boolean);
+            const lotNumbers = lotInfos.map((l) => l.lot_number);
+            const totalArea = lotInfos.reduce((sum, l) => sum + (l.area_sqm || 0), 0);
+            const projectName = lotInfos.length > 0 ? findProjectName(lotInfos[0].project_id) : '';
+
             return (
               <div
-                key={sale.id}
+                key={group.clientId}
                 className="card-hover p-5 animate-slide-up"
                 style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'backwards' }}
               >
@@ -158,11 +179,18 @@ export default function ApartadosPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <p className="font-semibold text-rf-dark dark:text-gray-100 text-[15px]">Apartado #{sale.id}</p>
+                        <p className="font-semibold text-rf-dark dark:text-gray-100 text-[15px]">
+                          Apartado #{group.sales[0].id}{group.sales.length > 1 ? ` +${group.sales.length - 1}` : ''}
+                        </p>
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                           {cfg.label}
                         </span>
+                        {group.sales.length > 1 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-200/50 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-800/40">
+                            {group.sales.length} lotes
+                          </span>
+                        )}
                       </div>
 
                       {client && (
@@ -186,11 +214,13 @@ export default function ApartadosPage() {
                         </div>
                       )}
 
-                      {lot && (
-                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                          Lote #{lot.lot_number} · {lot.area_sqm} m² · {findProjectName(lot.project_id)}
-                        </div>
-                      )}
+                      <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        {lotNumbers.length === 1 ? (
+                          <>Lote #{lotNumbers[0]} · {lotInfos[0]?.area_sqm} m² · {projectName}</>
+                        ) : (
+                          <>Lotes #{lotNumbers.join(', ')} · {totalArea} m² total · {projectName}</>
+                        )}
+                      </div>
 
                       {days !== null && (
                         <div className={`mt-2.5 inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg ring-1 ${
@@ -207,13 +237,13 @@ export default function ApartadosPage() {
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
-                      onClick={() => setConfirmAction({ type: 'paid', saleId: sale.id })}
+                      onClick={() => setConfirmAction({ type: 'paid', saleIds })}
                       className="btn-success flex items-center gap-1.5 text-xs"
                     >
                       <CheckCircle size={14} /> Vendido
                     </button>
                     <button
-                      onClick={() => setConfirmAction({ type: 'cancel', saleId: sale.id })}
+                      onClick={() => setConfirmAction({ type: 'cancel', saleIds })}
                       className="btn-danger flex items-center gap-1.5 text-xs"
                     >
                       <XCircle size={14} /> Eliminar
@@ -247,8 +277,8 @@ export default function ApartadosPage() {
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                 {confirmAction.type === 'paid'
-                  ? '¿Confirmas que este apartado se ha pagado completamente?'
-                  : '¿Estás seguro de eliminar este apartado? El lote quedará disponible nuevamente.'}
+                  ? `¿Confirmas que ${confirmAction.saleIds.length > 1 ? 'estos apartados se han pagado' : 'este apartado se ha pagado'} completamente?`
+                  : `¿Estás seguro de eliminar ${confirmAction.saleIds.length > 1 ? `estos ${confirmAction.saleIds.length} apartados` : 'este apartado'}? ${confirmAction.saleIds.length > 1 ? 'Los lotes quedarán disponibles' : 'El lote quedará disponible'} nuevamente.`}
               </p>
               <div className="flex gap-3">
                 <button
@@ -259,8 +289,8 @@ export default function ApartadosPage() {
                 </button>
                 <button
                   onClick={() => confirmAction.type === 'paid'
-                    ? handleMarkPaid(confirmAction.saleId)
-                    : handleCancel(confirmAction.saleId)
+                    ? handleMarkPaid(confirmAction.saleIds)
+                    : handleCancel(confirmAction.saleIds)
                   }
                   className={`flex-1 py-2.5 text-white rounded-xl font-medium text-sm transition-all ${
                     confirmAction.type === 'paid'

@@ -3,6 +3,54 @@ import { dashboardApi, salesApi } from '../lib/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
 import { TrendingUp, DollarSign, PieChartIcon, LayoutGrid } from 'lucide-react';
 
+function DonutTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0];
+  const total = payload.reduce((sum, p) => sum + (p.payload?.value || 0), 0);
+  const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : 0;
+  return (
+    <div className="bg-white/95 dark:bg-[#161824]/95 backdrop-blur-xl border border-gray-200/60 dark:border-gray-700/40 rounded-xl px-4 py-3 shadow-premium-lg">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.payload.fill }} />
+        <span className="text-sm font-semibold text-rf-dark dark:text-gray-100">{d.name}</span>
+      </div>
+      <div className="flex items-baseline gap-3 text-xs">
+        <span className="text-rf-gray dark:text-gray-400">Cantidad: <strong className="text-rf-dark dark:text-gray-100">{d.value}</strong></span>
+        <span className="text-rf-gray dark:text-gray-400">Porcentaje: <strong className="text-rf-dark dark:text-gray-100">{pct}%</strong></span>
+      </div>
+    </div>
+  );
+}
+
+function DonutLegend({ data, total }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
+      {data.map((entry) => {
+        const pct = total > 0 ? ((entry.value / total) * 100).toFixed(1) : 0;
+        return (
+          <div key={entry.name} className="flex items-center gap-1.5 text-xs">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.fill }} />
+            <span className="text-rf-gray dark:text-gray-400">{entry.name}</span>
+            <span className="font-semibold text-rf-dark dark:text-gray-200">{pct}%</span>
+            <span className="text-rf-gray-light dark:text-gray-500">({entry.value})</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DonutCenterLabel({ total }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{ paddingBottom: 24 }}>
+      <div className="text-center">
+        <p className="text-2xl font-bold text-rf-dark dark:text-gray-100 leading-none">{total}</p>
+        <p className="text-[10px] text-rf-gray-light dark:text-gray-500 font-medium mt-1">registros</p>
+      </div>
+    </div>
+  );
+}
+
 const PIPELINE_LABELS = {
   reserved: 'Apartado',
   option_signed: 'Opción Firmada',
@@ -136,16 +184,29 @@ export default function ReportsPage() {
             </div>
             <h2 className="text-lg font-semibold text-rf-dark dark:text-gray-100">Distribución por Estatus</h2>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie data={statusCounts} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={3} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                {statusCounts.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid rgba(229, 221, 211, 0.5)', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)' }} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="relative">
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={statusCounts}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={105}
+                  paddingAngle={2}
+                  dataKey="value"
+                  strokeWidth={0}
+                >
+                  {statusCounts.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip content={<DonutTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <DonutCenterLabel total={statusCounts.reduce((s, e) => s + e.value, 0)} />
+          </div>
+          <DonutLegend data={statusCounts} total={statusCounts.reduce((s, e) => s + e.value, 0)} />
         </div>
 
         <div className="card p-6 stagger-7 animate-fade-in">

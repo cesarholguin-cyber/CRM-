@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { authApi, usersApi } from '../lib/api';
-import { Settings, User, Shield, Key, Sparkles, Users, Plus, Trash2, Pencil } from 'lucide-react';
+import { Settings, User, Shield, Key, Users, Plus, Trash2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -10,7 +10,6 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
-  // User management
   const [userList, setUserList] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ email: '', username: '', password: '', full_name: '', phone: '', role: 'PROMOTOR' });
@@ -94,10 +93,10 @@ export default function SettingsPage() {
 
   const roleBadge = (role) => {
     const styles = {
-      ADMIN: 'bg-purple-100 text-purple-700 border-purple-200',
-      PROMOTOR: 'bg-blue-100 text-blue-700 border-blue-200',
+      ADMIN: 'bg-purple-100 text-purple-700 border border-purple-200',
+      PROMOTOR: 'bg-blue-100 text-blue-700 border border-blue-200',
     };
-    return styles[role] || 'bg-gray-100 text-gray-600';
+    return styles[role] || 'bg-gray-100 text-gray-600 border border-gray-200';
   };
 
   const roleLabel = (role) => {
@@ -107,8 +106,8 @@ export default function SettingsPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-700 to-rf-green-900 flex items-center justify-center shadow-lg">
+      <div className="flex items-center gap-3 mb-6 stagger-1 animate-fade-in">
+        <div className="w-10 h-10 rounded-xl bg-rf-green-800 flex items-center justify-center shadow-premium-sm">
           <Settings size={20} className="text-white" />
         </div>
         <div>
@@ -117,25 +116,27 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="flex gap-2 mb-6 flex-wrap stagger-2 animate-fade-in">
         {tabs.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
               tab === t.id
-                ? 'bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white shadow-md'
-                : 'bg-white/80 backdrop-blur-sm text-rf-gray border border-gray-200/80 hover:bg-gray-50 hover:border-gray-300 shadow-sm'
-            }`}>
+                ? 'btn-primary'
+                : 'btn-secondary'
+            }`}
+          >
             <t.icon size={16} /> {t.label}
           </button>
         ))}
       </div>
 
       {tab === 'profile' && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-sm max-w-lg animate-scale-in">
+        <div className="card p-6 max-w-lg stagger-3 animate-slide-up">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-100/80 to-rf-green-50/80 flex items-center justify-center">
-              <User size={18} className="text-rf-green-600" />
+            <div className="w-10 h-10 rounded-xl bg-rf-cream flex items-center justify-center">
+              <User size={18} className="text-rf-green-700" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-rf-dark">Información del Perfil</h2>
@@ -143,19 +144,19 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="space-y-4">
-            <div className="bg-gray-50/50 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50">
+            <div className="card p-4">
               <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Nombre</label>
               <p className="text-rf-dark font-medium">{user?.full_name}</p>
             </div>
-            <div className="bg-gray-50/50 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50">
+            <div className="card p-4">
               <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Email</label>
               <p className="text-rf-dark">{user?.email}</p>
             </div>
-            <div className="bg-gray-50/50 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50">
+            <div className="card p-4">
               <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Usuario</label>
               <p className="text-rf-dark">{user?.username}</p>
             </div>
-            <div className="bg-gray-50/50 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50">
+            <div className="card p-4">
               <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Rol</label>
               <p className="text-rf-dark capitalize">{roleLabel(user?.role)}</p>
             </div>
@@ -165,34 +166,33 @@ export default function SettingsPage() {
 
       {tab === 'security' && (
         <div className="space-y-6 max-w-lg">
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-sm animate-scale-in">
+          <div className="card p-6 stagger-3 animate-slide-up">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100/80 to-amber-50/80 flex items-center justify-center">
-                <Key size={18} className="text-amber-600" />
+              <div className="w-10 h-10 rounded-xl bg-rf-cream flex items-center justify-center">
+                <Key size={18} className="text-rf-green-700" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-rf-dark">Cambiar Contraseña</h2>
                 <p className="text-xs text-rf-gray-light mt-0.5">Actualiza tu contraseña de acceso</p>
               </div>
             </div>
-            {msg && <div className="bg-emerald-50/80 backdrop-blur-sm text-emerald-600 px-4 py-3 rounded-xl text-sm mb-4 border border-emerald-200/50 animate-slide-down">{msg}</div>}
-            {err && <div className="bg-red-50/80 backdrop-blur-sm text-red-600 px-4 py-3 rounded-xl text-sm mb-4 border border-red-200/50 animate-slide-down">{err}</div>}
+            {msg && <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-3 rounded-xl text-sm mb-4">{msg}</div>}
+            {err && <div className="bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded-xl text-sm mb-4">{err}</div>}
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-rf-gray mb-1.5">Contraseña actual</label>
-                <input type="password" value={passwordForm.current_password} onChange={(e) => setPasswordForm({...passwordForm, current_password: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required />
+                <input type="password" value={passwordForm.current_password} onChange={(e) => setPasswordForm({...passwordForm, current_password: e.target.value})} className="input" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-rf-gray mb-1.5">Nueva contraseña</label>
-                <input type="password" value={passwordForm.new_password} onChange={(e) => setPasswordForm({...passwordForm, new_password: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required minLength={8} />
+                <input type="password" value={passwordForm.new_password} onChange={(e) => setPasswordForm({...passwordForm, new_password: e.target.value})} className="input" required minLength={8} />
                 <p className="text-xs text-rf-gray-light mt-1.5">Mínimo 8 caracteres</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-rf-gray mb-1.5">Confirmar nueva contraseña</label>
-                <input type="password" value={passwordForm.confirm_password} onChange={(e) => setPasswordForm({...passwordForm, confirm_password: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required />
+                <input type="password" value={passwordForm.confirm_password} onChange={(e) => setPasswordForm({...passwordForm, confirm_password: e.target.value})} className="input" required />
               </div>
-              <button type="submit" className="relative overflow-hidden group bg-gradient-to-r from-rf-green-800 via-rf-green-700 to-rf-green-800 text-white px-6 py-2.5 rounded-xl hover:from-rf-green-700 hover:via-rf-green-600 hover:to-rf-green-700 hover:shadow-lg transition-all duration-300 text-sm font-medium shadow-md">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+              <button type="submit" className="btn-primary">
                 Actualizar Contraseña
               </button>
             </form>
@@ -201,51 +201,48 @@ export default function SettingsPage() {
       )}
 
       {tab === 'users' && (
-        <div className="animate-scale-in">
+        <div className="stagger-3 animate-slide-up">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-semibold text-rf-dark">Gestión de Usuarios</h2>
               <p className="text-sm text-rf-gray-light mt-0.5">Administra los usuarios del sistema</p>
             </div>
-            <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all duration-300 text-sm font-medium shadow-md">
+            <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
               <Plus size={16} /> Nuevo Usuario
             </button>
           </div>
 
-          {err && <div className="bg-red-50/80 backdrop-blur-sm text-red-600 px-4 py-3 rounded-xl text-sm mb-4 border border-red-200/50">{err}</div>}
+          {err && <div className="bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded-xl text-sm mb-4">{err}</div>}
 
-          {/* Create user modal */}
           {showCreate && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl p-6 border border-white/30 shadow-2xl max-w-md w-full animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowCreate(false)}>
+              <div className="card p-6 shadow-premium-xl max-w-md w-full animate-scale-in" onClick={(e) => e.stopPropagation()}>
                 <h3 className="text-lg font-semibold text-rf-dark mb-4">Nuevo Usuario</h3>
-                {createErr && <div className="bg-red-50/80 backdrop-blur-sm text-red-600 px-4 py-3 rounded-xl text-sm mb-4 border border-red-200/50">{createErr}</div>}
+                {createErr && <div className="bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded-xl text-sm mb-4">{createErr}</div>}
                 <form onSubmit={handleCreateUser} className="space-y-3">
-                  <input placeholder="Nombre completo" value={createForm.full_name} onChange={(e) => setCreateForm({...createForm, full_name: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" required />
-                  <input placeholder="Email" type="email" value={createForm.email} onChange={(e) => setCreateForm({...createForm, email: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" required />
-                  <input placeholder="Usuario" value={createForm.username} onChange={(e) => setCreateForm({...createForm, username: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" required />
-                  <input placeholder="Contraseña" type="password" value={createForm.password} onChange={(e) => setCreateForm({...createForm, password: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" required minLength={8} />
-                  <input placeholder="Teléfono (opcional)" value={createForm.phone} onChange={(e) => setCreateForm({...createForm, phone: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all" />
-                  <select value={createForm.role} onChange={(e) => setCreateForm({...createForm, role: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all">
+                  <input placeholder="Nombre completo" value={createForm.full_name} onChange={(e) => setCreateForm({...createForm, full_name: e.target.value})} className="input" required />
+                  <input placeholder="Email" type="email" value={createForm.email} onChange={(e) => setCreateForm({...createForm, email: e.target.value})} className="input" required />
+                  <input placeholder="Usuario" value={createForm.username} onChange={(e) => setCreateForm({...createForm, username: e.target.value})} className="input" required />
+                  <input placeholder="Contraseña" type="password" value={createForm.password} onChange={(e) => setCreateForm({...createForm, password: e.target.value})} className="input" required minLength={8} />
+                  <input placeholder="Teléfono (opcional)" value={createForm.phone} onChange={(e) => setCreateForm({...createForm, phone: e.target.value})} className="input" />
+                  <select value={createForm.role} onChange={(e) => setCreateForm({...createForm, role: e.target.value})} className="input">
                     <option value="PROMOTOR">Promotor</option>
                     <option value="ADMIN">Admin</option>
                   </select>
                   <div className="flex gap-3 pt-2">
-                    <button type="button" onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-rf-gray hover:bg-gray-50 transition-all text-sm font-medium">Cancelar</button>
-                    <button type="submit" className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white hover:shadow-lg transition-all text-sm font-medium shadow-md">Crear</button>
+                    <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary flex-1">Cancelar</button>
+                    <button type="submit" className="btn-primary flex-1">Crear</button>
                   </div>
                 </form>
               </div>
             </div>
           )}
 
-          {/* Users table */}
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/30 shadow-sm overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200/50">
+                  <tr className="border-b border-gray-200">
                     <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light uppercase tracking-wider font-medium">Nombre</th>
                     <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light uppercase tracking-wider font-medium">Email</th>
                     <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light uppercase tracking-wider font-medium">Rol</th>
@@ -254,10 +251,10 @@ export default function SettingsPage() {
                 </thead>
                 <tbody>
                   {userList.map((u) => (
-                    <tr key={u.id} className="border-b border-gray-100/50 hover:bg-gray-50/30 transition-colors">
+                    <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rf-green-700 to-rf-green-900 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                          <div className="w-8 h-8 rounded-full bg-rf-green-800 text-white flex items-center justify-center text-xs font-bold shadow-premium-xs">
                             {u.full_name?.charAt(0)}
                           </div>
                           <div>
@@ -268,15 +265,15 @@ export default function SettingsPage() {
                       </td>
                       <td className="px-4 py-3.5 text-sm text-rf-gray">{u.email}</td>
                       <td className="px-4 py-3.5">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium border ${roleBadge(u.role)}`}>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium ${roleBadge(u.role)}`}>
                           {roleLabel(u.role)}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         {u.id !== user?.id && (
                           <button onClick={() => handleDeleteUser(u.id)}
-                            className="text-red-400 hover:text-red-600 transition-colors p-1.5 hover:bg-red-50 rounded-lg">
-                            <Trash2 size={15} />
+                            className="btn-danger !px-2 !py-1.5 !rounded-lg text-xs flex items-center gap-1 inline-flex">
+                            <Trash2 size={14} />
                           </button>
                         )}
                       </td>

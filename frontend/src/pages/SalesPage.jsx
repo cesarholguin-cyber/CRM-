@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { salesApi, clientsApi, lotsApi, projectsApi } from '../lib/api';
-import { ShoppingCart, Plus, TrendingUp, DollarSign, Calendar, Sparkles } from 'lucide-react';
+import { ShoppingCart, Plus, TrendingUp, DollarSign, Calendar, LayoutGrid, List, ChevronDown, X } from 'lucide-react';
 
 const statusConfig = {
   reserved: { label: 'Apartado', color: 'bg-amber-100/80 text-amber-700 border-amber-200/50', dot: 'bg-amber-500' },
@@ -88,94 +88,116 @@ export default function SalesPage() {
     setLots([]);
   };
 
+  const openNew = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
   const findClientName = (id) => clients.find((c) => c.id === id)?.full_name || `Cliente #${id}`;
   const getSalesByStatus = (status) => sales.filter((s) => s.status === status);
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-8">
+    <div className="animate-fade-in max-w-7xl mx-auto">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-8 animate-slide-up">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-bold text-rf-dark">Ventas</h1>
-            <span className="px-2.5 py-0.5 bg-amber-100/80 backdrop-blur-sm text-amber-700 rounded-full text-xs font-medium border border-amber-200/50 shadow-sm">{sales.length} total</span>
+            <h1 className="text-3xl font-bold text-rf-dark tracking-tight">Ventas</h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200/60">
+              {sales.length}
+            </span>
           </div>
-          <p className="text-base text-rf-gray-light mt-1">Gestiona apartados, contratos y financiamiento</p>
+          <p className="text-sm text-rf-gray-light">Gestiona apartados, contratos y financiamiento</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="relative overflow-hidden group bg-gradient-to-r from-rf-green-800 via-rf-green-700 to-rf-green-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:from-rf-green-700 hover:via-rf-green-600 hover:to-rf-green-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-sm font-medium shadow-md">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-          <Plus size={18} /> Nueva Venta
+        <button onClick={openNew} className="btn-primary inline-flex items-center gap-2">
+          <Plus size={16} /> Nueva Venta
         </button>
       </div>
 
-      {/* Filters + View toggle */}
-      <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-4 border border-white/30 shadow-sm mb-6 flex flex-wrap gap-3 items-center">
-        <div className="flex gap-1.5 flex-wrap">
+      {/* Filter Bar + View Toggle */}
+      <div className="glass-panel rounded-2xl p-3 shadow-premium-sm mb-6 flex flex-wrap gap-2 items-center animate-slide-up stagger-1">
+        <div className="flex gap-1 flex-wrap flex-1">
           {['', 'reserved', 'option_signed', 'contract_signed', 'financing', 'paid', 'cancelled'].map((s) => (
-            <button key={s} onClick={() => setFilter(s)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${filter === s ? 'bg-rf-green-800 text-white shadow-md' : 'bg-gray-100/80 text-gray-500 hover:bg-gray-200 hover:text-gray-700'}`}>
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                filter === s
+                  ? 'bg-rf-green-800 text-white shadow-premium-xs'
+                  : 'text-rf-gray hover:bg-gray-100 hover:text-rf-dark'
+              }`}
+            >
               {s ? (statusConfig[s]?.label || s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())) : 'Todas'}
             </button>
           ))}
         </div>
-        <div className="ml-auto flex gap-1 bg-gray-100/80 p-0.5 rounded-lg">
-          <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'list' ? 'bg-white text-rf-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-            Lista
+        <div className="flex gap-0.5 bg-gray-100 p-0.5 rounded-lg">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-md transition-all duration-200 ${viewMode === 'list' ? 'bg-white text-rf-dark shadow-premium-xs' : 'text-rf-gray-light hover:text-rf-gray'}`}
+            title="Vista lista"
+          >
+            <List size={16} />
           </button>
-          <button onClick={() => setViewMode('pipeline')} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'pipeline' ? 'bg-white text-rf-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-            Pipeline
+          <button
+            onClick={() => setViewMode('pipeline')}
+            className={`p-2 rounded-md transition-all duration-200 ${viewMode === 'pipeline' ? 'bg-white text-rf-dark shadow-premium-xs' : 'text-rf-gray-light hover:text-rf-gray'}`}
+            title="Vista pipeline"
+          >
+            <LayoutGrid size={16} />
           </button>
         </div>
       </div>
 
+      {/* Loading State */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="relative">
-            <div className="w-14 h-14 border-[3px] border-rf-green-100/50 border-t-rf-green-800 rounded-full animate-spin" />
-            <div className="w-14 h-14 border-[3px] border-rf-green-200/30 border-t-rf-green-600 rounded-full animate-spin absolute inset-0" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
-          </div>
+          <div className="w-10 h-10 border-[3px] border-rf-green-100 border-t-rf-green-800 rounded-full animate-spin" />
         </div>
       ) : sales.length === 0 ? (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-16 border border-dashed border-white/50 text-center animate-scale-in">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-rf-green-100 to-rf-green-50 flex items-center justify-center shadow-lg">
-            <ShoppingCart size={40} className="text-rf-green-400" />
+        /* Empty State */
+        <div className="card p-16 text-center animate-scale-in">
+          <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-amber-50 border border-amber-200/50 flex items-center justify-center">
+            <ShoppingCart size={28} className="text-amber-400" />
           </div>
-          <h3 className="text-xl font-semibold text-rf-dark mb-2">No hay ventas</h3>
-          <p className="text-gray-400 mb-6">Registra tu primera venta para empezar a dar seguimiento</p>
-          <button onClick={() => { resetForm(); setShowModal(true); }} className="inline-flex items-center gap-2 bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white px-5 py-2.5 rounded-xl hover:from-rf-green-700 hover:to-rf-green-600 hover:shadow-lg transition-all text-sm font-medium shadow-md">
-            <Plus size={18} /> Registrar Primera Venta
+          <h3 className="text-lg font-semibold text-rf-dark mb-1.5">No hay ventas</h3>
+          <p className="text-sm text-rf-gray-light mb-6 max-w-sm mx-auto">Registra tu primera venta para empezar a dar seguimiento</p>
+          <button onClick={openNew} className="btn-primary inline-flex items-center gap-2">
+            <Plus size={16} /> Registrar Primera Venta
           </button>
         </div>
       ) : viewMode === 'pipeline' ? (
+        /* Pipeline View */
         <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
           {pipelineStages.map((stage, stageIdx) => {
             const stageSales = getSalesByStatus(stage);
             const cfg = statusConfig[stage];
             return (
-              <div key={stage} className="min-w-[280px] flex-shrink-0 snap-start" style={{ animation: `slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) ${stageIdx * 80}ms both` }}>
+              <div key={stage} className={`min-w-[280px] flex-shrink-0 snap-start animate-fade-in stagger-${Math.min(stageIdx + 1, 9)}`}>
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                     <h3 className="text-sm font-semibold text-rf-dark">{cfg.label}</h3>
                   </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.color}`}>{stageSales.length}</span>
+                  <span className={`badge text-[10px] py-0 px-1.5 ${cfg.color}`}>{stageSales.length}</span>
                 </div>
                 <div className="space-y-2 min-h-[200px]">
                   {stageSales.length === 0 ? (
-                    <div className="bg-gray-50/50 backdrop-blur-sm border border-dashed border-gray-200/50 rounded-xl p-4 text-center">
-                      <p className="text-xs text-gray-400">Sin ventas</p>
+                    <div className="border border-dashed border-gray-200 rounded-xl p-4 text-center">
+                      <p className="text-xs text-rf-gray-light">Sin ventas</p>
                     </div>
                   ) : stageSales.map((sale, i) => (
                     <div
                       key={sale.id}
-                      className="bg-white rounded-xl p-4 border border-gray-100/80 hover:shadow-md hover:border-gray-200 transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
-                      style={{ animation: `scale-in 0.3s ease-out ${i * 50}ms both` }}
+                      className={`card-hover p-4 cursor-pointer animate-fade-in stagger-${Math.min(i + 1, 9)}`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <p className="font-semibold text-sm text-rf-dark">Venta #{sale.id}</p>
                         <span className="text-xs font-bold text-rf-green-800">${(sale.sale_price || 0).toLocaleString('es-MX')}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mb-1">{findClientName(sale.client_id)}</p>
+                      <p className="text-xs text-rf-gray-light mb-1">{findClientName(sale.client_id)}</p>
                       {sale.monthly_payment && (
-                        <div className="flex items-center gap-3 text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-50/50">
+                        <div className="flex items-center gap-3 text-[11px] text-rf-gray-light mt-2 pt-2 border-t border-gray-100">
                           <span className="flex items-center gap-1"><DollarSign size={10} /> ${sale.monthly_payment.toLocaleString('es-MX')}/mes</span>
                           <span className="flex items-center gap-1"><Calendar size={10} /> {sale.payment_terms_months} meses</span>
                         </div>
@@ -188,37 +210,37 @@ export default function SalesPage() {
           })}
         </div>
       ) : (
-        <div className="space-y-3">
+        /* List View */
+        <div className="space-y-2">
           {sales.map((sale, i) => {
             const cfg = statusConfig[sale.status] || statusConfig.reserved;
             return (
               <div
                 key={sale.id}
-                className="group bg-white/70 backdrop-blur-xl rounded-xl p-5 border border-white/30 hover:shadow-md hover:border-gray-200/80 transition-all duration-300 hover:-translate-y-0.5"
-                style={{ animation: `slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) ${i * 50}ms both` }}
+                className={`card-hover p-5 group animate-fade-in stagger-${Math.min(i + 1, 9)}`}
               >
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-100/80 to-rf-green-50/80 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                      <ShoppingCart size={18} className="text-rf-green-600" />
+                    <div className="w-10 h-10 rounded-xl bg-rf-green-50 border border-rf-green-200/50 flex items-center justify-center flex-shrink-0">
+                      <ShoppingCart size={18} className="text-rf-green-700" />
                     </div>
                     <div>
-                      <p className="font-semibold text-rf-dark">Venta #{sale.id}</p>
-                      <p className="text-sm text-gray-400">{findClientName(sale.client_id)} · Lote #{sale.lot_id}</p>
+                      <p className="font-semibold text-sm text-rf-dark">Venta #{sale.id}</p>
+                      <p className="text-sm text-rf-gray-light">{findClientName(sale.client_id)} · Lote #{sale.lot_id}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border backdrop-blur-sm ${cfg.color}`}>
+                    <span className={`badge ${cfg.color}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                       {cfg.label}
                     </span>
-                    <span className="text-lg font-bold text-rf-green-800">${(sale.sale_price || 0).toLocaleString('es-MX')}</span>
+                    <span className="text-lg font-bold text-rf-dark">${(sale.sale_price || 0).toLocaleString('es-MX')}</span>
                   </div>
                 </div>
                 {sale.monthly_payment && (
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100/50 text-xs text-gray-400">
-                    <span className="flex items-center gap-1.5"><DollarSign size={12} /> Pago mensual: <strong className="text-rf-dark">${sale.monthly_payment.toLocaleString('es-MX')}</strong></span>
-                    <span className="flex items-center gap-1.5"><Calendar size={12} /> Plazo: <strong className="text-rf-dark">{sale.payment_terms_months} meses</strong></span>
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs text-rf-gray">
+                    <span className="flex items-center gap-1.5"><DollarSign size={12} className="text-rf-gray-light" /> Pago mensual: <strong className="text-rf-dark">${sale.monthly_payment.toLocaleString('es-MX')}</strong></span>
+                    <span className="flex items-center gap-1.5"><Calendar size={12} className="text-rf-gray-light" /> Plazo: <strong className="text-rf-dark">{sale.payment_terms_months} meses</strong></span>
                   </div>
                 )}
               </div>
@@ -229,87 +251,144 @@ export default function SalesPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-800 to-rf-green-700 flex items-center justify-center shadow-lg">
-                <Sparkles size={18} className="text-white" />
-              </div>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-premium-xl animate-scale-in border border-gray-100" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 pb-0">
               <div>
-                <h2 className="text-xl font-bold text-rf-dark">Nueva Venta</h2>
+                <h2 className="text-lg font-semibold text-rf-dark">Nueva Venta</h2>
                 <p className="text-xs text-rf-gray-light mt-0.5">Registra una nueva operación de venta</p>
               </div>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1.5">Cliente</label>
-                <select value={form.client_id} onChange={(e) => setForm({...form, client_id: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required>
-                  <option value="">Seleccionar cliente</option>
-                  {clients.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1.5">Proyecto</label>
-                <select value={selectedProject} onChange={(e) => { setSelectedProject(e.target.value); loadLots(e.target.value); }} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md">
-                  <option value="">Seleccionar proyecto</option>
-                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1.5">Lote</label>
-                <select value={form.lot_id} onChange={(e) => setForm({...form, lot_id: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required>
-                  <option value="">Seleccionar lote</option>
-                  {lots.map((l) => <option key={l.id} value={l.id}>Lote #{l.lot_number} - {l.area_sqm}m² - ${(l.total_price || 0).toLocaleString('es-MX')}</option>)}
-                </select>
-              </div>
-
-              <button type="button" onClick={handleQuote} className="relative overflow-hidden group w-full py-2.5 bg-gradient-to-r from-rf-gold to-rf-gold-dark text-white rounded-xl hover:from-rf-gold-dark hover:to-rf-gold hover:shadow-lg transition-all duration-300 text-sm font-medium shadow-md">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                Calcular cotización
+              <button onClick={() => setShowModal(false)} className="p-2 rounded-lg text-rf-gray-light hover:text-rf-dark hover:bg-gray-100 transition-colors">
+                <X size={18} />
               </button>
+            </div>
 
-              {quote && (
-                <div className="bg-gradient-to-br from-rf-green-50/80 to-white/80 backdrop-blur-sm rounded-xl p-4 border border-rf-green-100/50 space-y-2 text-sm animate-scale-in">
-                  <p className="font-semibold text-rf-dark flex items-center gap-2 mb-3">
-                    <TrendingUp size={16} className="text-rf-green-600" />
-                    Cotización
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <span className="text-gray-500">Precio total:</span><span className="font-medium text-right text-rf-dark">${quote.total_price.toLocaleString('es-MX')}</span>
-                    <span className="text-gray-500">Enganche (30%):</span><span className="font-medium text-right text-rf-dark">${quote.down_payment.toLocaleString('es-MX')}</span>
-                    <span className="text-gray-500">Mensualidades:</span><span className="font-medium text-right text-rf-dark">${quote.monthly_payment.toLocaleString('es-MX')} x {quote.payment_terms_months} meses</span>
-                    <span className="text-gray-500 border-t border-rf-green-100/50 pt-1">Total a pagar:</span><span className="font-bold text-rf-green-800 text-right border-t border-rf-green-100/50 pt-1">${quote.total_to_pay.toLocaleString('es-MX')}</span>
+            <form onSubmit={handleCreate} className="p-6 space-y-5">
+              {/* Step 1: Selection */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full bg-rf-green-800 text-white flex items-center justify-center text-[10px] font-bold">1</div>
+                  <span className="text-sm font-semibold text-rf-dark">Selección</span>
+                </div>
+                <div className="space-y-3 pl-1">
+                  <div>
+                    <label className="block text-sm font-medium text-rf-gray mb-1.5">Cliente</label>
+                    <div className="relative">
+                      <select
+                        value={form.client_id}
+                        onChange={(e) => setForm({ ...form, client_id: e.target.value })}
+                        className="input appearance-none cursor-pointer pr-8"
+                        required
+                      >
+                        <option value="">Seleccionar cliente</option>
+                        {clients.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rf-gray-light pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-rf-gray mb-1.5">Proyecto</label>
+                    <div className="relative">
+                      <select
+                        value={selectedProject}
+                        onChange={(e) => { setSelectedProject(e.target.value); loadLots(e.target.value); }}
+                        className="input appearance-none cursor-pointer pr-8"
+                      >
+                        <option value="">Seleccionar proyecto</option>
+                        {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rf-gray-light pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-rf-gray mb-1.5">Lote</label>
+                    <div className="relative">
+                      <select
+                        value={form.lot_id}
+                        onChange={(e) => setForm({ ...form, lot_id: e.target.value })}
+                        className="input appearance-none cursor-pointer pr-8"
+                        required
+                      >
+                        <option value="">Seleccionar lote</option>
+                        {lots.map((l) => <option key={l.id} value={l.id}>Lote #{l.lot_number} - {l.area_sqm}m² - ${(l.total_price || 0).toLocaleString('es-MX')}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rf-gray-light pointer-events-none" />
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1.5">Precio de venta</label>
-                  <input type="number" value={form.sale_price} onChange={(e) => setForm({...form, sale_price: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" required />
+              {/* Quote Section */}
+              <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+                <button type="button" onClick={handleQuote} className="btn-secondary w-full inline-flex items-center justify-center gap-2">
+                  <TrendingUp size={15} />
+                  Calcular cotización
+                </button>
+
+                {quote && (
+                  <div className="mt-4 space-y-2 text-sm animate-scale-in">
+                    <p className="font-semibold text-rf-dark flex items-center gap-2 mb-3">
+                      <TrendingUp size={14} className="text-rf-green-700" />
+                      Resumen de Cotización
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-rf-gray">Precio total:</span>
+                      <span className="font-medium text-right text-rf-dark">${quote.total_price.toLocaleString('es-MX')}</span>
+                      <span className="text-rf-gray">Enganche (30%):</span>
+                      <span className="font-medium text-right text-rf-dark">${quote.down_payment.toLocaleString('es-MX')}</span>
+                      <span className="text-rf-gray">Mensualidades:</span>
+                      <span className="font-medium text-right text-rf-dark">${quote.monthly_payment.toLocaleString('es-MX')} x {quote.payment_terms_months} meses</span>
+                      <div className="col-span-2 grid grid-cols-2 pt-2 mt-1 border-t border-gray-200">
+                        <span className="text-rf-gray font-medium">Total a pagar:</span>
+                        <span className="font-bold text-rf-green-800 text-right">${quote.total_to_pay.toLocaleString('es-MX')}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Financial Details */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full bg-rf-green-800 text-white flex items-center justify-center text-[10px] font-bold">2</div>
+                  <span className="text-sm font-semibold text-rf-dark">Detalles financieros</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1.5">Enganche</label>
-                  <input type="number" value={form.down_payment} onChange={(e) => setForm({...form, down_payment: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" />
+                <div className="space-y-3 pl-1">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-rf-gray mb-1.5">Precio de venta</label>
+                      <input type="number" value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: e.target.value })} className="input" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-rf-gray mb-1.5">Enganche</label>
+                      <input type="number" value={form.down_payment} onChange={(e) => setForm({ ...form, down_payment: e.target.value })} className="input" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-rf-gray mb-1.5">Plazo (meses)</label>
+                      <input type="number" value={form.payment_terms_months} onChange={(e) => setForm({ ...form, payment_terms_months: e.target.value })} className="input" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-rf-gray mb-1.5">Interés anual (%)</label>
+                      <input type="number" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: e.target.value })} className="input" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1.5">Plazo (meses)</label>
-                  <input type="number" value={form.payment_terms_months} onChange={(e) => setForm({...form, payment_terms_months: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1.5">Interés anual (%)</label>
-                  <input type="number" value={form.interest_rate} onChange={(e) => setForm({...form, interest_rate: e.target.value})} className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rf-green-500/30 focus:border-rf-green-500 transition-all shadow-sm hover:shadow-md" />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-3">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium">Cancelar</button>
-                <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-rf-green-800 to-rf-green-700 text-white rounded-xl hover:from-rf-green-700 hover:to-rf-green-600 hover:shadow-lg transition-all duration-300 text-sm font-medium shadow-md">Crear Venta</button>
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary flex-1">
+                  Crear Venta
+                </button>
               </div>
             </form>
           </div>

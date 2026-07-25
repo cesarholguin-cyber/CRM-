@@ -135,7 +135,7 @@ async def update_sale(
     # Handle status transitions
     if "status" in update_dict:
         new_status = SaleStatus(update_dict["status"])
-        old_status = SaleStatus(sale.status)
+        old_status = SaleStatus(old_values["status"])
         result = await db.execute(select(Lot).where(Lot.id == sale.lot_id))
         lot = result.scalar_one_or_none()
         if not lot:
@@ -156,21 +156,22 @@ async def update_sale(
                     else:
                         project.sold_lots = (project.sold_lots or 0) + 1
         elif new_status == SaleStatus.CANCELLED:
-            # Liberate the lot
-            if old_status == SaleStatus.RESERVED:
-                lot.status = LotStatus.AVAILABLE
-                lot.sold_to_client_id = None
-                project = await db.execute(select(Project).where(Project.id == lot.project_id))
-                project = project.scalar_one_or_none()
-                if project:
-                    project.available_lots = min(project.total_lots, project.available_lots + 1)
-            elif old_status == SaleStatus.PAID:
+            # Liberate the lot for any non-PAID status (lot is RESERVED)
+            if old_status == SaleStatus.PAID:
                 lot.status = LotStatus.AVAILABLE
                 lot.sold_to_client_id = None
                 project = await db.execute(select(Project).where(Project.id == lot.project_id))
                 project = project.scalar_one_or_none()
                 if project:
                     project.sold_lots = max(0, (project.sold_lots or 0) - 1)
+                    project.available_lots = min(project.total_lots, project.available_lots + 1)
+            elif old_status != SaleStatus.CANCELLED:
+                # RESERVED, OPTION_SIGNED, CONTRACT_SIGNED, FINANCING — lot is RESERVED
+                lot.status = LotStatus.AVAILABLE
+                lot.sold_to_client_id = None
+                project = await db.execute(select(Project).where(Project.id == lot.project_id))
+                project = project.scalar_one_or_none()
+                if project:
                     project.available_lots = min(project.total_lots, project.available_lots + 1)
 
     await db.commit()

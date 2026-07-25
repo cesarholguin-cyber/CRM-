@@ -107,24 +107,12 @@ async def public_reserve(
         )
         lot = result.scalar_one_or_none()
 
-    # 3. Auto-create lot if it doesn't exist
-    if not lot and data.lot_number:
-        area = data.area_sqm or DEFAULT_LOT_AREAS.get(data.lot_number, 200)
-        lot = Lot(
-            project_id=project.id,
-            lot_number=data.lot_number,
-            area_sqm=area,
-            price_per_sqm=project.price_per_sqm,
-            total_price=area * project.price_per_sqm,
-            status=LotStatus.AVAILABLE,
-        )
-        db.add(lot)
-        project.total_lots += 1
-        project.available_lots += 1
-        await db.flush()
-
+    # 3. Lot must already exist (pre-seeded by admin)
     if not lot:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Lote no encontrado. Los lotes deben estar pre-registrados por el administrador.",
+        )
 
     if lot.status != LotStatus.AVAILABLE:
         return ReserveResponse(

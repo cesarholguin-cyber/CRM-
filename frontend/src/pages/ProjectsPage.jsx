@@ -56,6 +56,7 @@ export default function ProjectsPage() {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
+          <div className="w-1 h-7 rounded-full bg-gradient-to-b from-rf-green-800 to-rf-green-400 dark:from-rf-green-400 dark:to-rf-green-800" />
           <h1 className="text-2xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Proyectos</h1>
           <span className="px-2.5 py-0.5 bg-rf-green-50 text-rf-green-800 dark:bg-rf-green-900/30 dark:text-rf-green-300 rounded-full text-xs font-medium border border-rf-green-200 dark:border-rf-green-800/50">
             {projects.length}
@@ -68,7 +69,7 @@ export default function ProjectsPage() {
       </div>
 
       {projects.length === 0 ? (
-        <div className="card p-16 text-center animate-scale-in">
+        <div className="card p-16 text-center" style={{ animation: 'blur-in 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
           <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-rf-green-50 dark:bg-rf-green-900/30 flex items-center justify-center">
             <FolderOpen size={32} className="text-rf-green-400" />
           </div>
@@ -84,13 +85,17 @@ export default function ProjectsPage() {
           {projects.map((project, i) => (
             <div
               key={project.id}
-              className={`card-hover overflow-hidden animate-slide-up stagger-${Math.min(i + 1, 9)}`}
+              className="card-hover overflow-hidden relative"
+              style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: `${0.08 * i}s` }}
             >
-              <div className={`h-40 relative ${project.cover_image_url ? '' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+              <div className="h-40 relative overflow-hidden">
                 {project.cover_image_url ? (
-                  <img src={project.cover_image_url} alt={project.name} className="w-full h-full object-cover" />
+                  <>
+                    <img src={project.cover_image_url} alt={project.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+                  </>
                 ) : (
-                  <div className="flex items-center justify-center h-full">
+                  <div className={`flex items-center justify-center h-full ${project.cover_image_url ? '' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
                     <Building2 size={36} className="text-gray-200 dark:text-gray-600" />
                   </div>
                 )}
@@ -112,7 +117,7 @@ export default function ProjectsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center divide-x divide-gray-100 dark:divide-gray-700/50 mb-4 border border-gray-100 dark:border-gray-700/50 rounded-xl overflow-hidden">
+                <div className="flex items-center divide-x divide-gray-100 dark:divide-gray-700/50 mb-4 border border-gray-100 dark:border-gray-700/50 rounded-xl overflow-hidden border-t-2 border-t-rf-green-800/10 dark:border-t-rf-green-400/10">
                   <div className="flex-1 text-center py-2.5 px-2">
                     <p className="text-sm font-bold text-rf-dark dark:text-gray-100">{project.total_lots || 0}</p>
                     <p className="text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider">Lotes</p>
@@ -140,19 +145,22 @@ export default function ProjectsPage() {
                   <ArrowRight size={14} />
                 </Link>
               </div>
+
+              <div className="absolute bottom-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-rf-green-800/20 to-transparent dark:via-rf-green-400/20" />
             </div>
           ))}
         </div>
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
-          <div className="card bg-white p-6 w-full max-w-lg shadow-premium-xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-rf-dark dark:text-gray-100 mb-1">Nuevo Proyecto</h2>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
+          <div className="card bg-white p-6 w-full max-w-lg shadow-premium-xl animate-scale-in relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rf-green-800 via-rf-green-600 to-rf-green-400" />
+            <h2 className="text-lg font-bold text-rf-dark dark:text-gray-100 mb-1 mt-2">Nuevo Proyecto</h2>
             <p className="text-sm text-rf-gray-light dark:text-gray-500 mb-6">Completa los detalles del desarrollo</p>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Nombre</label>
+                <label className="block text-xs font-semibold text-rf-gray dark:text-gray-400 mb-1.5 uppercase tracking-wider">Nombre</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({...form, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')})}
@@ -162,7 +170,7 @@ export default function ProjectsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Slug (URL)</label>
+                <label className="block text-xs font-semibold text-rf-gray dark:text-gray-400 mb-1.5 uppercase tracking-wider">Slug (URL)</label>
                 <input
                   value={form.slug}
                   onChange={(e) => setForm({...form, slug: e.target.value})}
@@ -173,7 +181,7 @@ export default function ProjectsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Ciudad</label>
+                  <label className="block text-xs font-semibold text-rf-gray dark:text-gray-400 mb-1.5 uppercase tracking-wider">Ciudad</label>
                   <input
                     value={form.city}
                     onChange={(e) => setForm({...form, city: e.target.value})}
@@ -182,7 +190,7 @@ export default function ProjectsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Estado</label>
+                  <label className="block text-xs font-semibold text-rf-gray dark:text-gray-400 mb-1.5 uppercase tracking-wider">Estado</label>
                   <input
                     value={form.state}
                     onChange={(e) => setForm({...form, state: e.target.value})}
@@ -193,7 +201,7 @@ export default function ProjectsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">$/m²</label>
+                  <label className="block text-xs font-semibold text-rf-gray dark:text-gray-400 mb-1.5 uppercase tracking-wider">$/m²</label>
                   <input
                     type="number"
                     value={form.price_per_sqm}
@@ -203,7 +211,7 @@ export default function ProjectsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Total de lotes</label>
+                  <label className="block text-xs font-semibold text-rf-gray dark:text-gray-400 mb-1.5 uppercase tracking-wider">Total de lotes</label>
                   <input
                     type="number"
                     value={form.total_lots}

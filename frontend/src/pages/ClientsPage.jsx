@@ -78,15 +78,16 @@ export default function ClientsPage() {
   return (
     <div className="animate-fade-in max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8 animate-slide-up">
+      <div className="flex items-center justify-between mb-8" style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both' }}>
         <div>
           <div className="flex items-center gap-3 mb-1">
+            <div className="w-1 h-7 rounded-full bg-gradient-to-b from-rf-green-800 to-rf-green-400 flex-shrink-0" />
             <h1 className="text-3xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Clientes</h1>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rf-green-100 text-rf-green-800 dark:text-rf-green-300 border border-rf-green-200/60 dark:border-rf-green-800/50">
               {clients.length}
             </span>
           </div>
-          <p className="text-sm text-rf-gray-light dark:text-gray-500">Gestiona leads, prospectos y compradores</p>
+          <p className="text-sm text-rf-gray-light dark:text-gray-500 pl-4">Gestiona leads, prospectos y compradores</p>
         </div>
         <button onClick={openNew} className="btn-primary inline-flex items-center gap-2">
           <UserPlus size={16} /> Nuevo Cliente
@@ -94,7 +95,7 @@ export default function ClientsPage() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="glass-panel rounded-2xl p-4 shadow-premium-sm mb-6 flex flex-wrap gap-3 items-center animate-slide-up stagger-1">
+      <div className="glass-panel rounded-2xl p-4 shadow-premium-sm mb-6 flex flex-wrap gap-3 items-center border border-white/20 dark:border-white/5" style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '0.05s' }}>
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rf-gray-light dark:text-gray-500" />
           <input
@@ -129,11 +130,15 @@ export default function ClientsPage() {
       {/* Loading State */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-[3px] border-rf-green-100 border-t-rf-green-800 rounded-full animate-spin" />
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 rounded-full border-[3px] border-rf-green-100 dark:border-rf-green-900/50" />
+            <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-rf-green-800 dark:border-t-rf-green-400 animate-spin" />
+            <div className="absolute inset-1 rounded-full border-[2px] border-transparent border-b-rf-green-400/60 dark:border-b-rf-green-600/60 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+          </div>
         </div>
       ) : clients.length === 0 ? (
         /* Empty State */
-        <div className="card p-16 text-center animate-scale-in">
+        <div className="card p-16 text-center" style={{ animation: 'blur-in 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
           <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-rf-green-50 dark:bg-rf-green-900/30 border border-rf-green-200/50 dark:border-rf-green-800/50 flex items-center justify-center">
             <Users size={28} className="text-rf-green-400 dark:text-rf-green-500" />
           </div>
@@ -145,11 +150,12 @@ export default function ClientsPage() {
         </div>
       ) : (
         /* Table */
-        <div className="card shadow-premium-sm overflow-hidden animate-slide-up stagger-2">
+        <div className="card shadow-premium-sm overflow-hidden" style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '0.1s' }}>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50">
+                <tr className="border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/80 via-gray-50/50 to-gray-50/80 dark:from-gray-800/60 dark:via-gray-800/40 dark:to-gray-800/60 relative">
+                  <th className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rf-green-800 via-rf-green-500 to-rf-green-800 opacity-60" />
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider">Nombre</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Contacto</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider">Estado</th>
@@ -164,12 +170,13 @@ export default function ClientsPage() {
                   return (
                     <tr
                       key={client.id}
-                      className={`border-b border-gray-50 dark:border-gray-700/30 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors duration-150 cursor-pointer group animate-fade-in stagger-${Math.min(i + 1, 9)}`}
+                      className="border-b border-gray-50 dark:border-gray-700/30 hover:bg-rf-green-50/30 dark:hover:bg-rf-green-900/10 transition-all duration-200 cursor-pointer group"
+                      style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: `${Math.min(0.05 + i * 0.03, 0.5)}s` }}
                       onClick={() => openEdit(client)}
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-rf-green-800 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rf-green-800 to-rf-green-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0 shadow-sm">
                             {getInitials(client.full_name)}
                           </div>
                           <div className="min-w-0">
@@ -237,83 +244,86 @@ export default function ClientsPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl dark:bg-[#1a1d27] p-6 w-full max-w-md shadow-premium-xl animate-scale-in border border-gray-100 dark:border-gray-700/50" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold text-rf-dark dark:text-gray-100">{selectedClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
-                <p className="text-xs text-rf-gray-light dark:text-gray-500 mt-0.5">{selectedClient ? 'Actualiza los datos del cliente' : 'Registra un nuevo cliente en el sistema'}</p>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4" style={{ animation: 'fade-slide-up 0.4s cubic-bezier(0.16,1,0.3,1) both' }} onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl dark:bg-[#1a1d27] w-full max-w-md shadow-premium-xl overflow-hidden border border-gray-100 dark:border-gray-700/50" style={{ animation: 'scale-in 0.4s cubic-bezier(0.16,1,0.3,1) both' }} onClick={(e) => e.stopPropagation()}>
+            <div className="h-[3px] bg-gradient-to-r from-rf-green-800 via-rf-green-500 to-rf-green-800" />
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-rf-dark dark:text-gray-100">{selectedClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
+                  <p className="text-xs text-rf-gray-light dark:text-gray-500 mt-0.5">{selectedClient ? 'Actualiza los datos del cliente' : 'Registra un nuevo cliente en el sistema'}</p>
+                </div>
+                <button onClick={() => setShowModal(false)} className="p-2 rounded-lg text-rf-gray-light dark:text-gray-500 hover:text-rf-dark dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                  <X size={18} />
+                </button>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-2 rounded-lg text-rf-gray-light dark:text-gray-500 hover:text-rf-dark dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                <X size={18} />
-              </button>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Nombre completo *</label>
+                  <input
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                    className="input"
+                    placeholder="Nombre del cliente"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="input"
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Teléfono</label>
+                    <input
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="input"
+                      placeholder="+52 555 555 5555"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Estado</label>
+                  <div className="relative">
+                    <select
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value })}
+                      className="input appearance-none cursor-pointer pr-8"
+                    >
+                      {Object.entries(statusConfig).map(([key, cfg]) => (
+                        <option key={key} value={key}>{cfg.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rf-gray-light dark:text-gray-500 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Notas</label>
+                  <textarea
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    rows={3}
+                    className="input resize-none"
+                    placeholder="Notas adicionales..."
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn-primary flex-1">
+                    {selectedClient ? 'Guardar Cambios' : 'Crear Cliente'}
+                  </button>
+                </div>
+              </form>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Nombre completo *</label>
-                <input
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  className="input"
-                  placeholder="Nombre del cliente"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Email</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="input"
-                    placeholder="correo@ejemplo.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Teléfono</label>
-                  <input
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="input"
-                    placeholder="+52 555 555 5555"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Estado</label>
-                <div className="relative">
-                  <select
-                    value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="input appearance-none cursor-pointer pr-8"
-                  >
-                    {Object.entries(statusConfig).map(([key, cfg]) => (
-                      <option key={key} value={key}>{cfg.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rf-gray-light dark:text-gray-500 pointer-events-none" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Notas</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={3}
-                  className="input resize-none"
-                  placeholder="Notas adicionales..."
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">
-                  Cancelar
-                </button>
-                <button type="submit" className="btn-primary flex-1">
-                  {selectedClient ? 'Guardar Cambios' : 'Crear Cliente'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

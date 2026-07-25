@@ -75,6 +75,7 @@ export default function LotsPage() {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
+          <div className="w-1 h-7 rounded-full bg-gradient-to-b from-rf-green-800 to-rf-green-400" />
           <h1 className="text-2xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Inventario de Lotes</h1>
           {selectedProject && (
             <span className="px-2.5 py-0.5 bg-rf-green-50 text-rf-green-800 rounded-full text-xs font-medium border border-rf-green-200 dark:bg-rf-green-900/30 dark:text-rf-green-300 dark:border-rf-green-800/50">
@@ -90,7 +91,8 @@ export default function LotsPage() {
         )}
       </div>
 
-      <div className="card p-4 mb-6">
+      <div className="card p-4 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rf-green-400/40 to-transparent" />
         <div className="flex flex-wrap gap-4 items-center">
           <select
             value={selectedProject}
@@ -130,10 +132,13 @@ export default function LotsPage() {
 
       {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-600/50 border-t-rf-green-800 rounded-full animate-spin" />
+            <div className="relative w-9 h-9">
+              <div className="absolute inset-0 rounded-full border-[2.5px] border-gray-200/60 dark:border-gray-600/30" />
+              <div className="absolute inset-0 rounded-full border-[2.5px] border-transparent border-t-rf-green-800 border-r-rf-green-400/40 animate-spin" />
+            </div>
         </div>
       ) : !selectedProject ? (
-        <div className="card p-16 text-center animate-scale-in">
+        <div className="card p-16 text-center animate-scale-in" style={{ animation: 'blur-in 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
           <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
             <Grid3X3 size={32} className="text-gray-300 dark:text-gray-600" />
           </div>
@@ -141,7 +146,7 @@ export default function LotsPage() {
           <p className="text-sm text-rf-gray-light dark:text-gray-500">Elige un proyecto para ver su inventario de lotes</p>
         </div>
       ) : lots.length === 0 ? (
-        <div className="card p-16 text-center animate-scale-in">
+        <div className="card p-16 text-center animate-scale-in" style={{ animation: 'blur-in 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
           <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
             <Layers size={32} className="text-amber-400 dark:text-amber-300" />
           </div>
@@ -169,12 +174,13 @@ export default function LotsPage() {
               return (
                 <div
                   key={lot.id}
-                  className={`card p-3.5 animate-slide-up stagger-${Math.min(Math.floor(i / 6) + 1, 9)}`}
+                  className="card p-3.5 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                  style={{ animation: `slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both`, animationDelay: `${i * 30}ms` }}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2.5">
                     <span className="text-sm font-bold text-rf-dark dark:text-gray-100">#{lot.lot_number}</span>
                     {lot.block && (
-                      <span className="text-[10px] text-rf-gray-light dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600/50 font-medium">
+                      <span className="text-[10px] font-semibold tracking-wide uppercase text-rf-green-700 dark:text-rf-green-400 bg-rf-green-50/80 dark:bg-rf-green-900/20 px-2 py-0.5 rounded-md border border-rf-green-200/60 dark:border-rf-green-800/40">
                         MZ {lot.block}
                       </span>
                     )}
@@ -202,8 +208,9 @@ export default function LotsPage() {
       )}
 
       {showImport && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowImport(false)}>
-          <div className="card bg-white dark:bg-[#1a1d27] p-6 w-full max-w-lg shadow-premium-xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowImport(false)}>
+          <div className="card bg-white dark:bg-[#1a1d27] p-6 w-full max-w-lg shadow-premium-xl animate-scale-in relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-rf-green-800 via-rf-green-500 to-rf-green-800" />
             <h2 className="text-lg font-bold text-rf-dark dark:text-gray-100 mb-1">Importar Lotes</h2>
             <p className="text-sm text-rf-gray-light dark:text-gray-500 mb-5">Pega los datos en formato CSV</p>
             <p className="text-xs text-rf-gray dark:text-gray-400 mb-3">

@@ -14,6 +14,14 @@ const statusConfig = {
 
 const pipelineStages = ['reserved', 'option_signed', 'contract_signed', 'financing', 'paid'];
 
+const stageGradients = {
+  reserved: 'from-amber-500/30 to-amber-300/5',
+  option_signed: 'from-blue-500/30 to-blue-300/5',
+  contract_signed: 'from-indigo-500/30 to-indigo-300/5',
+  financing: 'from-purple-500/30 to-purple-300/5',
+  paid: 'from-emerald-500/30 to-emerald-300/5',
+};
+
 export default function SalesPage() {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,12 +110,15 @@ export default function SalesPage() {
       <div className="flex items-center justify-between mb-8 animate-slide-up">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Ventas</h1>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200/60">
+            <div className="flex items-center gap-2.5 animate-stagger-1">
+              <div className="w-1 h-7 rounded-full bg-gradient-to-b from-rf-green-800 to-rf-green-400" />
+              <h1 className="text-3xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Ventas</h1>
+            </div>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200/60 animate-scale-in stagger-3">
               {sales.length}
             </span>
           </div>
-          <p className="text-sm text-rf-gray-light dark:text-gray-500">Gestiona apartados, contratos y financiamiento</p>
+          <p className="text-sm text-rf-gray-light dark:text-gray-500 ml-3.5">Gestiona apartados, contratos y financiamiento</p>
         </div>
         <button onClick={openNew} className="btn-primary inline-flex items-center gap-2">
           <Plus size={16} /> Nueva Venta
@@ -115,7 +126,7 @@ export default function SalesPage() {
       </div>
 
       {/* Filter Bar + View Toggle */}
-      <div className="glass-panel rounded-2xl p-3 shadow-premium-sm mb-6 flex flex-wrap gap-2 items-center animate-slide-up stagger-1">
+      <div className="glass-panel rounded-2xl p-3 shadow-premium-sm mb-6 flex flex-wrap gap-2 items-center animate-slide-up stagger-1 border border-black/[0.03] dark:border-white/[0.05]">
         <div className="flex gap-1 flex-wrap flex-1">
           {['', 'reserved', 'option_signed', 'contract_signed', 'financing', 'paid', 'cancelled'].map((s) => (
             <button
@@ -152,7 +163,10 @@ export default function SalesPage() {
       {/* Loading State */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-10 h-10 border-[3px] border-rf-green-100 dark:border-rf-green-800/50 border-t-rf-green-800 rounded-full animate-spin" />
+          <div className="relative w-11 h-11">
+            <div className="absolute inset-0 rounded-full border-[3px] border-rf-green-100 dark:border-rf-green-900/40" />
+            <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-rf-green-800 border-r-rf-green-400 animate-spin" />
+          </div>
         </div>
       ) : sales.length === 0 ? (
         /* Empty State */
@@ -181,29 +195,31 @@ export default function SalesPage() {
                   </div>
                   <span className={`badge text-[10px] py-0 px-1.5 ${cfg.color}`}>{stageSales.length}</span>
                 </div>
-                <div className="space-y-2 min-h-[200px]">
-                  {stageSales.length === 0 ? (
-                    <div className="border border-dashed border-gray-200 dark:border-gray-600/50 rounded-xl p-4 text-center">
-                      <p className="text-xs text-rf-gray-light dark:text-gray-500">Sin ventas</p>
-                    </div>
-                  ) : stageSales.map((sale, i) => (
-                    <div
-                      key={sale.id}
-                      className={`card-hover p-4 cursor-pointer animate-fade-in stagger-${Math.min(i + 1, 9)}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <p className="font-semibold text-sm text-rf-dark dark:text-gray-100">Venta #{sale.id}</p>
-                        <span className="text-xs font-bold text-rf-green-800 dark:text-rf-green-300">${(sale.sale_price || 0).toLocaleString('es-MX')}</span>
+                <div className={`rounded-xl bg-gradient-to-b ${stageGradients[stage]} p-px`}>
+                  <div className="space-y-2 min-h-[200px] rounded-[11px] bg-white/60 dark:bg-[#12141e]/60 p-2">
+                    {stageSales.length === 0 ? (
+                      <div className="border border-dashed border-gray-200/80 dark:border-gray-600/40 rounded-lg p-4 text-center">
+                        <p className="text-xs text-rf-gray-light dark:text-gray-500">Sin ventas</p>
                       </div>
-                      <p className="text-xs text-rf-gray-light dark:text-gray-500 mb-1">{findClientName(sale.client_id)}</p>
-                      {sale.monthly_payment && (
-                        <div className="flex items-center gap-3 text-[11px] text-rf-gray-light dark:text-gray-500 mt-2 pt-2 border-t border-gray-100 dark:border-t-gray-700/50">
-                          <span className="flex items-center gap-1"><DollarSign size={10} /> ${sale.monthly_payment.toLocaleString('es-MX')}/mes</span>
-                          <span className="flex items-center gap-1"><Calendar size={10} /> {sale.payment_terms_months} meses</span>
+                    ) : stageSales.map((sale, i) => (
+                      <div
+                        key={sale.id}
+                        className={`card-hover p-4 cursor-pointer animate-fade-in stagger-${Math.min(i + 1, 9)}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <p className="font-semibold text-sm text-rf-dark dark:text-gray-100">Venta #{sale.id}</p>
+                          <span className="text-xs font-bold text-rf-green-800 dark:text-rf-green-300">${(sale.sale_price || 0).toLocaleString('es-MX')}</span>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <p className="text-xs text-rf-gray-light dark:text-gray-500 mb-1">{findClientName(sale.client_id)}</p>
+                        {sale.monthly_payment && (
+                          <div className="flex items-center gap-3 text-[11px] text-rf-gray-light dark:text-gray-500 mt-2 pt-2 border-t border-gray-100 dark:border-t-gray-700/50">
+                            <span className="flex items-center gap-1"><DollarSign size={10} /> ${sale.monthly_payment.toLocaleString('es-MX')}/mes</span>
+                            <span className="flex items-center gap-1"><Calendar size={10} /> {sale.payment_terms_months} meses</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             );
@@ -221,7 +237,7 @@ export default function SalesPage() {
               >
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-rf-green-50 dark:bg-rf-green-900/30 border border-rf-green-200/50 dark:border-rf-green-800/50 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rf-green-50 to-rf-green-100/60 dark:from-rf-green-900/30 dark:to-rf-green-800/20 border border-rf-green-200/50 dark:border-rf-green-800/50 flex items-center justify-center flex-shrink-0">
                       <ShoppingCart size={18} className="text-rf-green-700 dark:text-rf-green-400" />
                     </div>
                     <div>
@@ -251,8 +267,9 @@ export default function SalesPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
-          <div className="bg-white dark:bg-[#1a1d27] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-premium-xl animate-scale-in border border-gray-100 dark:border-gray-700/50" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowModal(false)}>
+          <div className="bg-white dark:bg-[#1a1d27] rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-premium-xl animate-scale-in border border-gray-100 dark:border-gray-700/50 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="h-1 w-full bg-gradient-to-r from-rf-green-800 via-rf-green-600 to-rf-green-400" />
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 pb-0">
               <div>
@@ -268,7 +285,7 @@ export default function SalesPage() {
               {/* Step 1: Selection */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-rf-green-800 text-white flex items-center justify-center text-[10px] font-bold">1</div>
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rf-green-800 to-rf-green-600 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">1</div>
                   <span className="text-sm font-semibold text-rf-dark dark:text-gray-100">Selección</span>
                 </div>
                 <div className="space-y-3 pl-1">
@@ -353,7 +370,7 @@ export default function SalesPage() {
               {/* Step 2: Financial Details */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-rf-green-800 text-white flex items-center justify-center text-[10px] font-bold">2</div>
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rf-green-800 to-rf-green-600 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">2</div>
                   <span className="text-sm font-semibold text-rf-dark dark:text-gray-100">Detalles financieros</span>
                 </div>
                 <div className="space-y-3 pl-1">

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { useTheme } from '../lib/theme';
 import {
   LayoutDashboard, Users, Building2, Map, ShoppingCart,
   Bookmark, BarChart3, Settings, LogOut, ChevronLeft, Menu, X,
+  Sun, Moon,
 } from 'lucide-react';
 
 const allNavItems = [
@@ -25,6 +27,7 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     setPageKey((k) => k + 1);
@@ -49,7 +52,7 @@ export default function DashboardLayout() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-white to-rf-green-50/20">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-white to-rf-green-50/20 dark:from-[#0f1117] dark:via-[#12141c] dark:to-[#0f171a]">
 
       {/* ── Sidebar ── */}
       <aside
@@ -190,29 +193,38 @@ export default function DashboardLayout() {
             }
           `}
         >
-          <button onClick={() => setMobileOpen(true)} className="md:hidden text-rf-gray hover:text-rf-dark transition-colors duration-200">
+          <button onClick={() => setMobileOpen(true)} className="md:hidden text-rf-gray dark:text-gray-400 hover:text-rf-dark dark:hover:text-gray-200 transition-colors duration-200">
             <Menu size={20} />
           </button>
 
           {/* Breadcrumb-style page indicator */}
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-rf-gray-light/70 font-medium uppercase tracking-wider">R&F</span>
-            <span className="text-rf-gray-light/30 text-[10px]">/</span>
-            <span className="text-[12px] text-rf-gray font-medium">
+            <span className="text-[11px] text-rf-gray-light/70 dark:text-gray-500 font-medium uppercase tracking-wider">R&F</span>
+            <span className="text-rf-gray-light/30 dark:text-gray-600 text-[10px]">/</span>
+            <span className="text-[12px] text-rf-gray dark:text-gray-300 font-medium">
               {currentPage?.label || 'Dashboard'}
             </span>
           </div>
 
           <div className="flex-1" />
 
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg text-rf-gray-light dark:text-gray-400 hover:text-rf-dark dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-all duration-200"
+            title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
           {user && (
             <div className="flex items-center gap-2.5">
-              <span className="text-[13px] text-rf-gray hidden sm:block">{user.full_name}</span>
+              <span className="text-[13px] text-rf-gray dark:text-gray-400 hidden sm:block">{user.full_name}</span>
               <div className="relative">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rf-green-700 to-rf-green-900 text-white flex items-center justify-center text-xs font-bold ring-2 ring-white/50 shadow-premium-xs">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rf-green-700 to-rf-green-900 text-white flex items-center justify-center text-xs font-bold ring-2 ring-white/50 dark:ring-white/10 shadow-premium-xs">
                   {user.full_name?.charAt(0)}
                 </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-[1.5px] border-white" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-[1.5px] border-white dark:border-[#1a1d27]" />
               </div>
             </div>
           )}
@@ -222,7 +234,7 @@ export default function DashboardLayout() {
         <main id="main-scroll-area" className="flex-1 overflow-y-auto">
           <div className="px-4 md:px-6 lg:px-8 py-6 lg:py-8">
             {/* Faint dot pattern background */}
-            <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]"
+            <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.015] dark:opacity-[0.03]"
               style={{
                 backgroundImage: 'radial-gradient(circle, #1a3c2a 0.5px, transparent 0.5px)',
                 backgroundSize: '20px 20px',

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
+import { ThemeProvider } from './lib/theme';
 import { salesApi } from './lib/api';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -78,7 +79,7 @@ function useApartadosPolling() {
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex items-center justify-center h-screen bg-rf-cream"><div className="animate-spin w-10 h-10 border-4 border-rf-green-600 border-t-transparent rounded-full" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-screen bg-rf-cream dark:bg-[#0f1117]"><div className="animate-spin w-10 h-10 border-4 border-rf-green-600 border-t-transparent rounded-full" /></div>;
   if (!user) return <Navigate to="/login" />;
   if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/dashboard" />;
   return children;
@@ -109,9 +110,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

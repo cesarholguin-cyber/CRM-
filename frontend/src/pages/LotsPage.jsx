@@ -4,10 +4,10 @@ import { useSearchParams } from 'react-router-dom';
 import { Download, Grid3X3, Upload, Layers } from 'lucide-react';
 
 const statusConfig = {
-  available: { label: 'Disponible', dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  reserved: { label: 'Apartado', dot: 'bg-amber-500', chip: 'bg-amber-50 text-amber-700 border-amber-200' },
-  sold: { label: 'Vendido', dot: 'bg-rf-green-800', chip: 'bg-rf-green-50 text-rf-green-800 border-rf-green-200' },
-  blocked: { label: 'Bloqueado', dot: 'bg-red-500', chip: 'bg-red-50 text-red-700 border-red-200' },
+  available: { label: 'Disponible', dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50' },
+  reserved: { label: 'Apartado', dot: 'bg-amber-500', chip: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50' },
+  sold: { label: 'Vendido', dot: 'bg-rf-green-800', chip: 'bg-rf-green-50 text-rf-green-800 border-rf-green-200 dark:bg-rf-green-900/30 dark:text-rf-green-300 dark:border-rf-green-800/50' },
+  blocked: { label: 'Bloqueado', dot: 'bg-red-500', chip: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/50' },
 };
 
 export default function LotsPage() {
@@ -75,9 +75,9 @@ export default function LotsPage() {
     <div className="animate-fade-in">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-rf-dark tracking-tight">Inventario de Lotes</h1>
+          <h1 className="text-2xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Inventario de Lotes</h1>
           {selectedProject && (
-            <span className="px-2.5 py-0.5 bg-rf-green-50 text-rf-green-800 rounded-full text-xs font-medium border border-rf-green-200">
+            <span className="px-2.5 py-0.5 bg-rf-green-50 text-rf-green-800 rounded-full text-xs font-medium border border-rf-green-200 dark:bg-rf-green-900/30 dark:text-rf-green-300 dark:border-rf-green-800/50">
               {filteredLots.length} lotes
             </span>
           )}
@@ -111,7 +111,7 @@ export default function LotsPage() {
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-150 ${
                   filter === f.key
                     ? 'bg-rf-green-800 text-white border-rf-green-800'
-                    : 'bg-white text-rf-gray border-gray-200 hover:border-gray-300 hover:text-rf-dark'
+                    : 'bg-white text-rf-gray border-gray-200 hover:border-gray-300 hover:text-rf-dark dark:text-gray-400 dark:bg-[#1a1d27] dark:border-gray-600/50 dark:hover:border-gray-500 dark:hover:text-gray-100'
                 }`}
               >
                 {f.label}
@@ -120,8 +120,8 @@ export default function LotsPage() {
           </div>
 
           {selectedProject && selectedProjectData && (
-            <div className="ml-auto text-xs text-rf-gray-light">
-              <span className="font-semibold text-rf-dark">{filteredLots.length}</span> lotes &middot; ${' '}
+            <div className="ml-auto text-xs text-rf-gray-light dark:text-gray-500">
+              <span className="font-semibold text-rf-dark dark:text-gray-100">{filteredLots.length}</span> lotes &middot; ${' '}
               {(selectedProjectData.price_per_sqm || 0).toLocaleString('es-MX')}/m²
             </div>
           )}
@@ -129,24 +129,24 @@ export default function LotsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-gray-200 border-t-rf-green-800 rounded-full animate-spin" />
+          <div className="flex items-center justify-center h-64">
+            <div className="w-8 h-8 border-2 border-gray-200 dark:border-gray-600/50 border-t-rf-green-800 rounded-full animate-spin" />
         </div>
       ) : !selectedProject ? (
         <div className="card p-16 text-center animate-scale-in">
-          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-50 flex items-center justify-center">
-            <Grid3X3 size={32} className="text-gray-300" />
+          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
+            <Grid3X3 size={32} className="text-gray-300 dark:text-gray-600" />
           </div>
-          <h3 className="text-lg font-semibold text-rf-dark mb-1.5">Selecciona un proyecto</h3>
-          <p className="text-sm text-rf-gray-light">Elige un proyecto para ver su inventario de lotes</p>
+          <h3 className="text-lg font-semibold text-rf-dark dark:text-gray-100 mb-1.5">Selecciona un proyecto</h3>
+          <p className="text-sm text-rf-gray-light dark:text-gray-500">Elige un proyecto para ver su inventario de lotes</p>
         </div>
       ) : lots.length === 0 ? (
         <div className="card p-16 text-center animate-scale-in">
-          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-amber-50 flex items-center justify-center">
-            <Layers size={32} className="text-amber-400" />
+          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+            <Layers size={32} className="text-amber-400 dark:text-amber-300" />
           </div>
-          <h3 className="text-lg font-semibold text-rf-dark mb-1.5">No hay lotes en este proyecto</h3>
-          <p className="text-sm text-rf-gray-light mb-6">Importa desde CSV o crea lotes manualmente</p>
+          <h3 className="text-lg font-semibold text-rf-dark dark:text-gray-100 mb-1.5">No hay lotes en este proyecto</h3>
+          <p className="text-sm text-rf-gray-light dark:text-gray-500 mb-6">Importa desde CSV o crea lotes manualmente</p>
           <button onClick={() => setShowImport(true)} className="btn-primary inline-flex items-center gap-2">
             <Download size={15} />
             Importar Lotes
@@ -154,7 +154,7 @@ export default function LotsPage() {
         </div>
       ) : (
         <>
-          <div className="flex gap-4 mb-4 text-xs text-rf-gray-light flex-wrap">
+          <div className="flex gap-4 mb-4 text-xs text-rf-gray-light dark:text-gray-500 flex-wrap">
             {Object.entries(statusConfig).map(([key, cfg]) => (
               <span key={key} className="flex items-center gap-1.5">
                 <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
@@ -172,15 +172,15 @@ export default function LotsPage() {
                   className={`card p-3.5 animate-slide-up stagger-${Math.min(Math.floor(i / 6) + 1, 9)}`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-bold text-rf-dark">#{lot.lot_number}</span>
+                    <span className="text-sm font-bold text-rf-dark dark:text-gray-100">#{lot.lot_number}</span>
                     {lot.block && (
-                      <span className="text-[10px] text-rf-gray-light bg-gray-50 px-1.5 py-0.5 rounded border border-gray-200 font-medium">
+                      <span className="text-[10px] text-rf-gray-light dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600/50 font-medium">
                         MZ {lot.block}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-rf-gray-light mb-1">{lot.area_sqm} m²</p>
-                  <p className="text-sm font-bold text-rf-dark mb-3">
+                  <p className="text-xs text-rf-gray-light dark:text-gray-500 mb-1">{lot.area_sqm} m²</p>
+                  <p className="text-sm font-bold text-rf-dark dark:text-gray-100 mb-3">
                     ${(lot.total_price || lot.area_sqm * (lot.price_per_sqm || 0)).toLocaleString('es-MX')}
                   </p>
                   <select
@@ -203,11 +203,11 @@ export default function LotsPage() {
 
       {showImport && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setShowImport(false)}>
-          <div className="card bg-white p-6 w-full max-w-lg shadow-premium-xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-rf-dark mb-1">Importar Lotes</h2>
-            <p className="text-sm text-rf-gray-light mb-5">Pega los datos en formato CSV</p>
-            <p className="text-xs text-rf-gray mb-3">
-              Formato: <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-[11px]">número, área_m², precio_m², manzana</code>
+          <div className="card bg-white dark:bg-[#1a1d27] p-6 w-full max-w-lg shadow-premium-xl animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-rf-dark dark:text-gray-100 mb-1">Importar Lotes</h2>
+            <p className="text-sm text-rf-gray-light dark:text-gray-500 mb-5">Pega los datos en formato CSV</p>
+            <p className="text-xs text-rf-gray dark:text-gray-400 mb-3">
+              Formato: <code className="bg-gray-100 dark:bg-gray-700/50 px-1.5 py-0.5 rounded font-mono text-[11px]">número, área_m², precio_m², manzana</code>
             </p>
             <textarea
               value={importData}

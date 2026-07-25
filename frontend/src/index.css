@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
   --color-rf-green-900: #0f2b1d;
@@ -457,3 +458,115 @@ body {
 .stagger-7 { animation-delay: 0.28s; }
 .stagger-8 { animation-delay: 0.32s; }
 .stagger-9 { animation-delay: 0.36s; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE — [data-theme="dark"] overrides
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] body {
+  background-color: #0f1117;
+  color: #e5e7eb;
+}
+
+/* ─── Glass effects ─── */
+[data-theme="dark"] .glass-card {
+  background: rgba(20, 22, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .glass-panel {
+  background: rgba(20, 22, 30, 0.75);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Cards ─── */
+[data-theme="dark"] .card,
+[data-theme="dark"] .card-hover,
+[data-theme="dark"] .card-interactive {
+  background-color: #1a1d27;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.15);
+}
+
+[data-theme="dark"] .card-hover:hover,
+[data-theme="dark"] .card-interactive:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.25), 0 8px 32px rgba(0,0,0,0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ─── Inputs ─── */
+[data-theme="dark"] .input,
+[data-theme="dark"] .input-elevated {
+  background-color: #1a1d27;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .input::placeholder,
+[data-theme="dark"] .input-elevated::placeholder {
+  color: #4b5563;
+}
+
+[data-theme="dark"] .input:hover,
+[data-theme="dark"] .input-elevated:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .input:focus,
+[data-theme="dark"] .input-elevated:focus {
+  box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.25);
+}
+
+/* ─── Buttons ─── */
+[data-theme="dark"] .btn-secondary {
+  background-color: #1a1d27;
+  color: #9ca3af;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background-color: #22252f;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .btn-ghost {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
+}
+
+/* ─── Scrollbar ─── */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #33363f;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #44474f;
+}
+
+/* ─── Shadows ─── */
+[data-theme="dark"] .shadow-premium-xs {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.15);
+}
+[data-theme="dark"] .shadow-premium-sm {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.15);
+}
+[data-theme="dark"] .shadow-premium-md {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.2);
+}
+[data-theme="dark"] .shadow-premium-lg {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.25), 0 8px 32px rgba(0,0,0,0.25);
+}
+[data-theme="dark"] .shadow-premium-xl {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3), 0 16px 48px rgba(0,0,0,0.3);
+}
+
+/* ─── Select option styling ─── */
+[data-theme="dark"] select option {
+  background-color: #1a1d27;
+  color: #e5e7eb;
+}

@@ -93,10 +93,10 @@ export default function SettingsPage() {
 
   const roleBadge = (role) => {
     const styles = {
-      ADMIN: 'bg-purple-100 text-purple-700 border border-purple-200',
-      PROMOTOR: 'bg-blue-100 text-blue-700 border border-blue-200',
+      ADMIN: 'bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50',
+      PROMOTOR: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50',
     };
-    return styles[role] || 'bg-gray-100 text-gray-600 border border-gray-200';
+    return styles[role] || 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-600/50';
   };
 
   const roleLabel = (role) => {
@@ -111,8 +111,8 @@ export default function SettingsPage() {
           <Settings size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-rf-dark">Configuración</h1>
-          <p className="text-sm text-rf-gray-light mt-1">Administra tu cuenta y preferencias</p>
+          <h1 className="text-2xl font-bold text-rf-dark dark:text-gray-100">Configuración</h1>
+          <p className="text-sm text-rf-gray-light dark:text-gray-500 mt-1">Administra tu cuenta y preferencias</p>
         </div>
       </div>
 
@@ -135,30 +135,30 @@ export default function SettingsPage() {
       {tab === 'profile' && (
         <div className="card p-6 max-w-lg stagger-3 animate-slide-up">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-rf-cream flex items-center justify-center">
-              <User size={18} className="text-rf-green-700" />
+            <div className="w-10 h-10 rounded-xl bg-rf-cream dark:bg-gray-800 flex items-center justify-center">
+              <User size={18} className="text-rf-green-700 dark:text-rf-green-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-rf-dark">Información del Perfil</h2>
-              <p className="text-xs text-rf-gray-light mt-0.5">Tus datos personales registrados</p>
+              <h2 className="text-lg font-semibold text-rf-dark dark:text-gray-100">Información del Perfil</h2>
+              <p className="text-xs text-rf-gray-light dark:text-gray-500 mt-0.5">Tus datos personales registrados</p>
             </div>
           </div>
           <div className="space-y-4">
             <div className="card p-4">
-              <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Nombre</label>
-              <p className="text-rf-dark font-medium">{user?.full_name}</p>
+              <label className="block text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider mb-1">Nombre</label>
+              <p className="text-rf-dark dark:text-gray-100 font-medium">{user?.full_name}</p>
             </div>
             <div className="card p-4">
-              <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Email</label>
-              <p className="text-rf-dark">{user?.email}</p>
+              <label className="block text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider mb-1">Email</label>
+              <p className="text-rf-dark dark:text-gray-100">{user?.email}</p>
             </div>
             <div className="card p-4">
-              <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Usuario</label>
-              <p className="text-rf-dark">{user?.username}</p>
+              <label className="block text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider mb-1">Usuario</label>
+              <p className="text-rf-dark dark:text-gray-100">{user?.username}</p>
             </div>
             <div className="card p-4">
-              <label className="block text-[10px] text-rf-gray-light uppercase tracking-wider mb-1">Rol</label>
-              <p className="text-rf-dark capitalize">{roleLabel(user?.role)}</p>
+              <label className="block text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider mb-1">Rol</label>
+              <p className="text-rf-dark dark:text-gray-100 capitalize">{roleLabel(user?.role)}</p>
             </div>
           </div>
         </div>
@@ -168,28 +168,28 @@ export default function SettingsPage() {
         <div className="space-y-6 max-w-lg">
           <div className="card p-6 stagger-3 animate-slide-up">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-rf-cream flex items-center justify-center">
-                <Key size={18} className="text-rf-green-700" />
+              <div className="w-10 h-10 rounded-xl bg-rf-cream dark:bg-gray-800 flex items-center justify-center">
+                <Key size={18} className="text-rf-green-700 dark:text-rf-green-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-rf-dark">Cambiar Contraseña</h2>
-                <p className="text-xs text-rf-gray-light mt-0.5">Actualiza tu contraseña de acceso</p>
+                <h2 className="text-lg font-semibold text-rf-dark dark:text-gray-100">Cambiar Contraseña</h2>
+                <p className="text-xs text-rf-gray-light dark:text-gray-500 mt-0.5">Actualiza tu contraseña de acceso</p>
               </div>
             </div>
-            {msg && <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-3 rounded-xl text-sm mb-4">{msg}</div>}
-            {err && <div className="bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded-xl text-sm mb-4">{err}</div>}
+            {msg && <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50 px-4 py-3 rounded-xl text-sm mb-4">{msg}</div>}
+            {err && <div className="bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/50 px-4 py-3 rounded-xl text-sm mb-4">{err}</div>}
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-rf-gray mb-1.5">Contraseña actual</label>
+                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Contraseña actual</label>
                 <input type="password" value={passwordForm.current_password} onChange={(e) => setPasswordForm({...passwordForm, current_password: e.target.value})} className="input" required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-rf-gray mb-1.5">Nueva contraseña</label>
+                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Nueva contraseña</label>
                 <input type="password" value={passwordForm.new_password} onChange={(e) => setPasswordForm({...passwordForm, new_password: e.target.value})} className="input" required minLength={8} />
-                <p className="text-xs text-rf-gray-light mt-1.5">Mínimo 8 caracteres</p>
+                <p className="text-xs text-rf-gray-light dark:text-gray-500 mt-1.5">Mínimo 8 caracteres</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-rf-gray mb-1.5">Confirmar nueva contraseña</label>
+                <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Confirmar nueva contraseña</label>
                 <input type="password" value={passwordForm.confirm_password} onChange={(e) => setPasswordForm({...passwordForm, confirm_password: e.target.value})} className="input" required />
               </div>
               <button type="submit" className="btn-primary">
@@ -204,21 +204,21 @@ export default function SettingsPage() {
         <div className="stagger-3 animate-slide-up">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-semibold text-rf-dark">Gestión de Usuarios</h2>
-              <p className="text-sm text-rf-gray-light mt-0.5">Administra los usuarios del sistema</p>
+              <h2 className="text-xl font-semibold text-rf-dark dark:text-gray-100">Gestión de Usuarios</h2>
+              <p className="text-sm text-rf-gray-light dark:text-gray-500 mt-0.5">Administra los usuarios del sistema</p>
             </div>
             <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
               <Plus size={16} /> Nuevo Usuario
             </button>
           </div>
 
-          {err && <div className="bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded-xl text-sm mb-4">{err}</div>}
+          {err && <div className="bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/50 px-4 py-3 rounded-xl text-sm mb-4">{err}</div>}
 
           {showCreate && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowCreate(false)}>
               <div className="card p-6 shadow-premium-xl max-w-md w-full animate-scale-in" onClick={(e) => e.stopPropagation()}>
-                <h3 className="text-lg font-semibold text-rf-dark mb-4">Nuevo Usuario</h3>
-                {createErr && <div className="bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded-xl text-sm mb-4">{createErr}</div>}
+                <h3 className="text-lg font-semibold text-rf-dark dark:text-gray-100 mb-4">Nuevo Usuario</h3>
+                {createErr && <div className="bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/50 px-4 py-3 rounded-xl text-sm mb-4">{createErr}</div>}
                 <form onSubmit={handleCreateUser} className="space-y-3">
                   <input placeholder="Nombre completo" value={createForm.full_name} onChange={(e) => setCreateForm({...createForm, full_name: e.target.value})} className="input" required />
                   <input placeholder="Email" type="email" value={createForm.email} onChange={(e) => setCreateForm({...createForm, email: e.target.value})} className="input" required />
@@ -242,28 +242,28 @@ export default function SettingsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light uppercase tracking-wider font-medium">Nombre</th>
-                    <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light uppercase tracking-wider font-medium">Email</th>
-                    <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light uppercase tracking-wider font-medium">Rol</th>
-                    <th className="text-right px-4 py-3.5 text-[10px] text-rf-gray-light uppercase tracking-wider font-medium">Acciones</th>
+                  <tr className="border-b border-gray-200 dark:border-gray-600/50">
+                    <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider font-medium">Nombre</th>
+                    <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider font-medium">Email</th>
+                    <th className="text-left px-4 py-3.5 text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider font-medium">Rol</th>
+                    <th className="text-right px-4 py-3.5 text-[10px] text-rf-gray-light dark:text-gray-500 uppercase tracking-wider font-medium">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {userList.map((u) => (
-                    <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                    <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-rf-green-800 text-white flex items-center justify-center text-xs font-bold shadow-premium-xs">
                             {u.full_name?.charAt(0)}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-rf-dark">{u.full_name}</p>
-                            <p className="text-[10px] text-rf-gray-light">@{u.username}</p>
+                            <p className="text-sm font-medium text-rf-dark dark:text-gray-100">{u.full_name}</p>
+                            <p className="text-[10px] text-rf-gray-light dark:text-gray-500">@{u.username}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-sm text-rf-gray">{u.email}</td>
+                      <td className="px-4 py-3.5 text-sm text-rf-gray dark:text-gray-400">{u.email}</td>
                       <td className="px-4 py-3.5">
                         <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium ${roleBadge(u.role)}`}>
                           {roleLabel(u.role)}

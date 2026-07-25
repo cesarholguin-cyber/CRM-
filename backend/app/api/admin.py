@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text as sa_text, func
+from sqlalchemy import select, func, delete
 from pydantic import BaseModel
+import logging
 
 from app.core.database import get_db
 from app.models.lot import Lot, LotStatus
@@ -10,9 +11,9 @@ from app.models.client import Client, ClientInteraction
 from app.models.project import Project, ProjectStatus
 from app.api.deps import get_current_admin
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
-# Complete lot area data for Floresta Campestre (271 lots)
 LOT_AREAS = {
     1: 255.518, 2: 224.260, 3: 223.278, 4: 222.296, 5: 221.313,
     6: 220.331, 7: 219.349, 8: 218.367, 9: 217.385, 10: 216.402,
@@ -38,7 +39,6 @@ LOT_AREAS = {
     106: 200, 107: 200, 108: 200, 109: 200, 110: 220,
     111: 220, 112: 200, 113: 200, 114: 200, 115: 200,
     116: 200, 117: 200, 118: 200, 119: 200, 120: 331.508,
-    # 121-271: default 200 m2 each
 }
 for n in range(121, 272):
     LOT_AREAS[n] = 200
@@ -56,7 +56,6 @@ class ResetResult(BaseModel):
     sold_lots: int
     sales_deleted: int
     clients_deleted: int
-    payments_deleted: int
 
 
 @router.post("/reset-lots", response_model=ResetResult)
@@ -64,74 +63,79 @@ async def reset_lots(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_admin),
 ):
-    # 1. Delete all operational data (order matters for FK constraints)
-    result = await db.execute(select(func.count(Payment.id)))
-    payments_deleted = result.scalar() or 0
-    await db.execute(sa_text("DELETE FROM payments"))
+    try:
+        result = await db.execute(select(func.count(Sale.id)))
+        sales_deleted = result.scalar() or 0
 
-    result = await db.execute(select(func.count(PaymentPlan.id)))
-    plans_deleted = result.scalar() or 0
-    await db.execute(sa_text("DELETE FROM payment_plans"))
+        result = await db.execute(select(func.count(Client.id)))
+        clients_deleted = result.scalar() or 0
 
-    result = await db.execute(select(func.count(Sale.id)))
-    sales_deleted = result.scalar() or 0
-    await db.execute(sa_text("DELETE FROM sales"))
+        result = await db.execute(select(func.count(Lot.id)))
+        lots_deleted = result.scalar() or 0
 
-    await db.execute(sa_text("DELETE FROM client_interactions"))
+        await db.execute(delete(Payment))
+        await db.execute(delete(PaymentPlan))
 
-    result = await db.execute(select(func.count(Client.id)))
-    clients_deleted = result.scalar() or 0
-    await db.execute(sa_text("DELETE FROM clients"))
+        lots_with_sale = await db.execute(select(Lot.id).join(Sale, Sale.lot_id == Lot.id))
+        for (lot_id,) in lots_with_sale:
+            lot = await db.get(Lot, lot_id)
+            if lot:
+                lot.sold_to_client_id = None
+                lot.status = LotStatus.AVAILABLE
 
-    # Reset lots FK references first
-    await db.execute(sa_text("UPDATE lots SET sold_to_client_id = NULL, status = 'available' WHERE status != 'available'"))
+        await db.execute(delete(Sale))
+        await db.execute(delete(ClientInteraction))
+        await db.execute(delete(Client))
+        await db.execute(delete(Lot))
 
-    await db.execute(sa_text("DELETE FROM lots"))
-
-    # 2. Find or create the project
-    result = await db.execute(select(Project).where(Project.slug == "floresta-campestre"))
-    project = result.scalar_one_or_none()
-    if not project:
-        project = Project(
-            name="Floresta Campestre",
-            slug="floresta-campestre",
-            description="Desarrollo residencial campestre",
-            price_per_sqm=DEFAULT_PRICE_PER_SQM,
-            status=ProjectStatus.ACTIVE,
-        )
-        db.add(project)
         await db.flush()
 
-    # 3. Seed 271 lots
-    lots_created = 0
-    for lot_number in range(1, TOTAL_LOTS + 1):
-        area = LOT_AREAS.get(lot_number, 200)
-        lot = Lot(
-            project_id=project.id,
-            lot_number=lot_number,
-            area_sqm=area,
-            price_per_sqm=DEFAULT_PRICE_PER_SQM,
-            total_price=area * DEFAULT_PRICE_PER_SQM,
-            status=LotStatus.AVAILABLE,
+        result = await db.execute(select(Project).where(Project.slug == "floresta-campestre"))
+        project = result.scalar_one_or_none()
+        if not project:
+            project = Project(
+                name="Floresta Campestre",
+                slug="floresta-campestre",
+                description="Desarrollo residencial campestre",
+                price_per_sqm=DEFAULT_PRICE_PER_SQM,
+                status=ProjectStatus.ACTIVE,
+            )
+            db.add(project)
+            await db.flush()
+
+        lots_created = 0
+        for lot_number in range(1, TOTAL_LOTS + 1):
+            area = LOT_AREAS.get(lot_number, 200)
+            lot = Lot(
+                project_id=project.id,
+                lot_number=lot_number,
+                area_sqm=area,
+                price_per_sqm=DEFAULT_PRICE_PER_SQM,
+                total_price=area * DEFAULT_PRICE_PER_SQM,
+                status=LotStatus.AVAILABLE,
+            )
+            db.add(lot)
+            lots_created += 1
+
+        project.total_lots = TOTAL_LOTS
+        project.available_lots = TOTAL_LOTS
+        project.sold_lots = 0
+
+        await db.commit()
+
+        logger.info(f"RESET COMPLETE: {lots_created} lots seeded, {sales_deleted} sales deleted, {clients_deleted} clients deleted")
+
+        return ResetResult(
+            message=f"Base de datos reiniciada. {TOTAL_LOTS} lotes creados como disponibles.",
+            lots_created=lots_created,
+            total_lots=TOTAL_LOTS,
+            available_lots=TOTAL_LOTS,
+            reserved_lots=0,
+            sold_lots=0,
+            sales_deleted=sales_deleted,
+            clients_deleted=clients_deleted,
         )
-        db.add(lot)
-        lots_created += 1
-
-    # 4. Update project counters
-    project.total_lots = TOTAL_LOTS
-    project.available_lots = TOTAL_LOTS
-    project.sold_lots = 0
-
-    await db.commit()
-
-    return ResetResult(
-        message=f"Base de datos reiniciada. {TOTAL_LOTS} lotes creados como disponibles.",
-        lots_created=lots_created,
-        total_lots=TOTAL_LOTS,
-        available_lots=TOTAL_LOTS,
-        reserved_lots=0,
-        sold_lots=0,
-        sales_deleted=sales_deleted,
-        clients_deleted=clients_deleted,
-        payments_deleted=payments_deleted,
-    )
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"RESET FAILED: {e}")
+        raise

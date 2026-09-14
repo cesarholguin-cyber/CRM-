@@ -98,7 +98,7 @@ app = FastAPI(
 )
 
 # Serve frontend static files
-frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
+frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
     app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
     logger.info(f"Serving frontend static files from {frontend_dist}")
@@ -166,19 +166,19 @@ app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(public_routes.router, prefix="/api/v1")
 
-# SPA catch-all: serve index.html for any non-API route via middleware
-@app.middleware("http")
-async def spa_fallback(request: Request, call_next):
-    try:
-        response = await call_next(request)
-        if response.status_code == 404 and not request.url.path.startswith("/api/"):
-            index_path = frontend_dist / "index.html"
-            if index_path.exists():
-                return FileResponse(str(index_path))
-        return response
-    except HTTPException as exc:
-        if exc.status_code == 404 and not request.url.path.startswith("/api/"):
-            index_path = frontend_dist / "index.html"
-            if index_path.exists():
-                return FileResponse(str(index_path))
-        raise
+
+# Serve frontend for all non-API routes (MUST be after all routers)
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    # API routes are handled by routers above
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404)
+    # Try to serve the exact file first (for assets, etc.)
+    file_path = frontend_dist / full_path
+    if full_path and file_path.is_file():
+        return FileResponse(str(file_path))
+    # For everything else, serve index.html (SPA routing)
+    index_path = frontend_dist / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    raise HTTPException(status_code=404)

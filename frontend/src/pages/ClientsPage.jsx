@@ -1,0 +1,332 @@
+import { useState, useEffect } from 'react';
+import { clientsApi } from '../lib/api';
+import { Users, Plus, Search, Phone, Mail, MessageCircle, Filter, UserPlus, ChevronDown, X } from 'lucide-react';
+
+const statusConfig = {
+  lead: { label: 'Lead', color: 'bg-gray-100/80 text-gray-600 border-gray-200/50 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-600/50', dot: 'bg-gray-400' },
+  contacted: { label: 'Contactado', color: 'bg-blue-100/80 text-blue-700 border-blue-200/50 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50', dot: 'bg-blue-500' },
+  visit_scheduled: { label: 'Visita Agendada', color: 'bg-purple-100/80 text-purple-700 border-purple-200/50 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50', dot: 'bg-purple-500' },
+  visit_completed: { label: 'Visita Realizada', color: 'bg-indigo-100/80 text-indigo-700 border-indigo-200/50 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800/50', dot: 'bg-indigo-500' },
+  interested: { label: 'Interesado', color: 'bg-amber-100/80 text-amber-700 border-amber-200/50 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50', dot: 'bg-amber-500' },
+  reservation: { label: 'Apartado', color: 'bg-orange-100/80 text-orange-700 border-orange-200/50 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800/50', dot: 'bg-orange-500' },
+  sold: { label: 'Vendido', color: 'bg-rf-green-100/80 text-rf-green-800 border-rf-green-600/50 dark:bg-rf-green-900/30 dark:text-rf-green-300 dark:border-rf-green-700/50', dot: 'bg-rf-green-800' },
+  lost: { label: 'Perdido', color: 'bg-red-100/80 text-red-700 border-red-200/50 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800/50', dot: 'bg-red-500' },
+};
+
+export default function ClientsPage() {
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '', notes: '', status: 'lead' });
+
+  useEffect(() => {
+    loadClients();
+  }, [statusFilter]);
+
+  const loadClients = () => {
+    setLoading(true);
+    const params = {};
+    if (statusFilter) params.status = statusFilter;
+    if (search) params.search = search;
+    clientsApi.list(params)
+      .then((res) => setClients(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (selectedClient) {
+        const res = await clientsApi.update(selectedClient.id, form);
+        setClients(clients.map(c => c.id === selectedClient.id ? res.data : c));
+      } else {
+        const res = await clientsApi.create(form);
+        setClients([res.data, ...clients]);
+      }
+      setShowModal(false);
+      setSelectedClient(null);
+      setForm({ full_name: '', email: '', phone: '', notes: '', status: 'lead' });
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Error');
+    }
+  };
+
+  const openEdit = (client) => {
+    setSelectedClient(client);
+    setForm({ full_name: client.full_name, email: client.email || '', phone: client.phone || '', notes: client.notes || '', status: client.status });
+    setShowModal(true);
+  };
+
+  const openNew = () => {
+    setSelectedClient(null);
+    setForm({ full_name: '', email: '', phone: '', notes: '', status: 'lead' });
+    setShowModal(true);
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0][0].toUpperCase();
+  };
+
+  return (
+    <div className="animate-fade-in max-w-7xl mx-auto">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-8" style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both' }}>
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-1 h-7 rounded-full bg-gradient-to-b from-rf-green-800 to-rf-green-400 flex-shrink-0" />
+            <h1 className="text-3xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Clientes</h1>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rf-green-100 text-rf-green-800 dark:text-rf-green-300 border border-rf-green-200/60 dark:border-rf-green-800/50">
+              {clients.length}
+            </span>
+          </div>
+          <p className="text-sm text-rf-gray-light dark:text-gray-500 pl-4">Gestiona leads, prospectos y compradores</p>
+        </div>
+        <button onClick={openNew} className="btn-primary inline-flex items-center gap-2">
+          <UserPlus size={16} /> Nuevo Cliente
+        </button>
+      </div>
+
+      {/* Search & Filter Bar */}
+      <div className="glass-panel rounded-2xl p-4 shadow-premium-sm mb-6 flex flex-wrap gap-3 items-center border border-white/20 dark:border-white/5" style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '0.05s' }}>
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rf-gray-light dark:text-gray-500" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && loadClients()}
+            placeholder="Buscar clientes por nombre..."
+            className="input pl-10"
+          />
+        </div>
+        <div className="relative">
+          <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-rf-gray-light dark:text-gray-500 pointer-events-none" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input pl-9 pr-8 appearance-none cursor-pointer min-w-[180px]"
+          >
+            <option value="">Todos los estados</option>
+            {Object.entries(statusConfig).map(([key, cfg]) => (
+              <option key={key} value={key}>{cfg.label}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rf-gray-light dark:text-gray-500 pointer-events-none" />
+        </div>
+        {statusFilter && (
+          <button onClick={() => setStatusFilter('')} className="btn-ghost inline-flex items-center gap-1.5 text-xs">
+            <X size={14} /> Limpiar filtro
+          </button>
+        )}
+      </div>
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 rounded-full border-[3px] border-rf-green-100 dark:border-rf-green-900/50" />
+            <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-rf-green-800 dark:border-t-rf-green-400 animate-spin" />
+            <div className="absolute inset-1 rounded-full border-[2px] border-transparent border-b-rf-green-400/60 dark:border-b-rf-green-600/60 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+          </div>
+        </div>
+      ) : clients.length === 0 ? (
+        /* Empty State */
+        <div className="card p-16 text-center" style={{ animation: 'blur-in 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
+          <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-rf-green-50 dark:bg-rf-green-900/30 border border-rf-green-200/50 dark:border-rf-green-800/50 flex items-center justify-center">
+            <Users size={28} className="text-rf-green-400 dark:text-rf-green-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-rf-dark dark:text-gray-100 mb-1.5">No hay clientes</h3>
+          <p className="text-sm text-rf-gray-light dark:text-gray-500 mb-6 max-w-sm mx-auto">Registra tu primer cliente para empezar a gestionar ventas</p>
+          <button onClick={openNew} className="btn-primary inline-flex items-center gap-2">
+            <UserPlus size={16} /> Registrar Primer Cliente
+          </button>
+        </div>
+      ) : (
+        /* Table */
+        <div className="card shadow-premium-sm overflow-hidden" style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: '0.1s' }}>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/80 via-gray-50/50 to-gray-50/80 dark:from-gray-800/60 dark:via-gray-800/40 dark:to-gray-800/60 relative">
+                  <th className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rf-green-800 via-rf-green-500 to-rf-green-800 opacity-60" />
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider hidden sm:table-cell">Contacto</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider hidden md:table-cell">Origen</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-rf-gray-light dark:text-gray-500 uppercase tracking-wider hidden md:table-cell">Creado</th>
+                  <th className="px-5 py-3 w-24" />
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((client, i) => {
+                  const cfg = statusConfig[client.status] || statusConfig.lead;
+                  return (
+                    <tr
+                      key={client.id}
+                      className="border-b border-gray-50 dark:border-gray-700/30 hover:bg-rf-green-50/30 dark:hover:bg-rf-green-900/10 transition-all duration-200 cursor-pointer group"
+                      style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: `${Math.min(0.05 + i * 0.03, 0.5)}s` }}
+                      onClick={() => openEdit(client)}
+                    >
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rf-green-800 to-rf-green-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0 shadow-sm">
+                            {getInitials(client.full_name)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-rf-dark dark:text-gray-100 group-hover:text-rf-green-800 dark:group-hover:text-rf-green-300 transition-colors truncate">{client.full_name}</p>
+                            {client.notes && <p className="text-[11px] text-rf-gray-light dark:text-gray-500 mt-0.5 line-clamp-1">{client.notes}</p>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 hidden sm:table-cell">
+                        <div className="flex flex-col gap-1">
+                          {client.email && (
+                            <span className="text-xs text-rf-gray dark:text-gray-400 flex items-center gap-1.5">
+                              <Mail size={12} className="text-rf-gray-light dark:text-gray-500 flex-shrink-0" />
+                              <span className="truncate max-w-[180px]">{client.email}</span>
+                            </span>
+                          )}
+                          {client.phone && (
+                            <span className="text-xs text-rf-gray dark:text-gray-400 flex items-center gap-1.5">
+                              <Phone size={12} className="text-rf-gray-light dark:text-gray-500 flex-shrink-0" />
+                              {client.phone}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`badge ${cfg.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                          {cfg.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-rf-gray dark:text-gray-400 capitalize hidden md:table-cell">{client.lead_source || '—'}</td>
+                      <td className="px-5 py-3.5 text-sm text-rf-gray dark:text-gray-400 hidden md:table-cell">{client.created_at ? new Date(client.created_at).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
+                          {client.phone && (
+                            <a
+                              href={`https://wa.me/${client.phone.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg text-rf-gray-light dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors duration-150"
+                              title="Enviar WhatsApp"
+                            >
+                              <MessageCircle size={15} />
+                            </a>
+                          )}
+                          {client.email && (
+                            <a
+                              href={`mailto:${client.email}`}
+                              className="p-1.5 rounded-lg text-rf-gray-light dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-150"
+                              title="Enviar correo"
+                            >
+                              <Mail size={15} />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4" style={{ animation: 'fade-slide-up 0.4s cubic-bezier(0.16,1,0.3,1) both' }} onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl dark:bg-[#1a1d27] w-full max-w-md shadow-premium-xl overflow-hidden border border-gray-100 dark:border-gray-700/50" style={{ animation: 'scale-in 0.4s cubic-bezier(0.16,1,0.3,1) both' }} onClick={(e) => e.stopPropagation()}>
+            <div className="h-[3px] bg-gradient-to-r from-rf-green-800 via-rf-green-500 to-rf-green-800" />
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-rf-dark dark:text-gray-100">{selectedClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
+                  <p className="text-xs text-rf-gray-light dark:text-gray-500 mt-0.5">{selectedClient ? 'Actualiza los datos del cliente' : 'Registra un nuevo cliente en el sistema'}</p>
+                </div>
+                <button onClick={() => setShowModal(false)} className="p-2 rounded-lg text-rf-gray-light dark:text-gray-500 hover:text-rf-dark dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Nombre completo *</label>
+                  <input
+                    value={form.full_name}
+                    onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                    className="input"
+                    placeholder="Nombre del cliente"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="input"
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Teléfono</label>
+                    <input
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="input"
+                      placeholder="+52 555 555 5555"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Estado</label>
+                  <div className="relative">
+                    <select
+                      value={form.status}
+                      onChange={(e) => setForm({ ...form, status: e.target.value })}
+                      className="input appearance-none cursor-pointer pr-8"
+                    >
+                      {Object.entries(statusConfig).map(([key, cfg]) => (
+                        <option key={key} value={key}>{cfg.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-rf-gray-light dark:text-gray-500 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-rf-gray dark:text-gray-400 mb-1.5">Notas</label>
+                  <textarea
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    rows={3}
+                    className="input resize-none"
+                    placeholder="Notas adicionales..."
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowModal(false)} className="btn-secondary flex-1">
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn-primary flex-1">
+                    {selectedClient ? 'Guardar Cambios' : 'Crear Cliente'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

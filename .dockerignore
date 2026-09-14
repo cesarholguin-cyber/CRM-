@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Node
+frontend/node_modules
+frontend/.oxlintrc.json
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Render (not needed in Docker)
+render.yaml
+build.sh
+
+# Docs
+*.md
+!frontend/README.md

@@ -53,13 +53,16 @@ class Settings(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # If only DATABASE_URL is provided (sync format), derive async version
-        if self.DATABASE_URL and not self.DATABASE_URL_SYNC:
-            self.DATABASE_URL_SYNC = self.DATABASE_URL
-            if "+asyncpg" not in self.DATABASE_URL:
-                self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-        elif self.DATABASE_URL_SYNC and not self.DATABASE_URL:
-            self.DATABASE_URL = self.DATABASE_URL_SYNC.replace("postgresql://", "postgresql+asyncpg://")
+        # Auto-convert URLs to use psycopg driver for Supabase pgbouncer compatibility
+        if self.DATABASE_URL:
+            # Replace any driver with psycopg
+            self.DATABASE_URL = self.DATABASE_URL.replace("+asyncpg", "+psycopg")
+            if "postgresql+psycopg://" not in self.DATABASE_URL:
+                self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+psycopg://")
+        if self.DATABASE_URL_SYNC:
+            self.DATABASE_URL_SYNC = self.DATABASE_URL_SYNC.replace("+asyncpg", "")
+            if "+psycopg" not in self.DATABASE_URL_SYNC:
+                self.DATABASE_URL_SYNC = self.DATABASE_URL_SYNC.replace("postgresql+psycopg://", "postgresql://")
 
 
 settings = Settings()

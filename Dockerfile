@@ -34,6 +34,6 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 RUN adduser --disabled-password --gecos '' appuser
 USER appuser
 
-EXPOSE 8000
+EXPOSE 80
 
-CMD ["sh", "-c", "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 80"]

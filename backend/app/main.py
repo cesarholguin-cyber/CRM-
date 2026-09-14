@@ -111,10 +111,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
 cors_origins = settings.cors_origins_list
-# Always include localhost for dev
-for dev_origin in ["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"]:
-    if dev_origin not in cors_origins:
-        cors_origins.append(dev_origin)
+# Always include the Netlify frontend
+netlify_url = "https://dashing-marshmallow-9ef64c.netlify.app"
+if netlify_url not in cors_origins:
+    cors_origins.append(netlify_url)
 logger.info(f"CORS origins: {cors_origins}")
 
 app.add_middleware(

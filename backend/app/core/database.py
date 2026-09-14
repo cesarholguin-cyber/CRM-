@@ -3,21 +3,13 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 from app.core.config import settings
 
-# Supabase uses pgbouncer which doesn't support prepared statements
-# We need to disable them at multiple levels
-DATABASE_URL = settings.DATABASE_URL
-
-# Append pgbouncer-compatible params to URL if not present
-if "?" not in DATABASE_URL:
-    DATABASE_URL += "?prepared_statement_cache_size=0"
-elif "prepared_statement_cache_size" not in DATABASE_URL:
-    DATABASE_URL += "&prepared_statement_cache_size=0"
-
+# Supabase uses pgbouncer which doesn't support prepared statements.
+# NullPool + statement_cache_size=0 disables prepared statements entirely.
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.DATABASE_URL,
     echo=settings.DEBUG,
     poolclass=NullPool,
-    connect_args={"statement_cache_size": 0, "prepared_statement_cache_size": 0},
+    connect_args={"statement_cache_size": 0},
 )
 
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

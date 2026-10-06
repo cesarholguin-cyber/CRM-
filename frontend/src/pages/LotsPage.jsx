@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { lotsApi, projectsApi } from '../lib/api';
+import { blockLabel, groupLotsByBlock } from '../lib/lotInventory';
 import { useSearchParams } from 'react-router-dom';
 import { Download, Grid3X3, Upload, Layers } from 'lucide-react';
 
@@ -16,6 +17,8 @@ export default function LotsPage() {
   const [lots, setLots] = useState([]);
   const [selectedProject, setSelectedProject] = useState(searchParams.get('project_id') || '');
   const [filter, setFilter] = useState('all');
+  const [selectedBlock, setSelectedBlock] = useState('all');
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);
   const [importData, setImportData] = useState('');
@@ -25,14 +28,18 @@ export default function LotsPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedProject) { setLots([]); setLoading(false); return; }
+    let active = true;
+    setSelectedBlock('all');
+    setLots([]);
+    setLoadError('');
+    if (!selectedProject) { setLoading(false); return; }
     setLoading(true);
-    const params = filter !== 'all' ? { status: filter } : {};
-    lotsApi.list(selectedProject, params)
-      .then((res) => setLots(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [selectedProject, filter]);
+    lotsApi.list(selectedProject)
+      .then((res) => { if (active) setLots(res.data); })
+      .catch(() => { if (active) setLoadError('No pudimos cargar los lotes. Vuelve a seleccionar el proyecto para reintentar.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [selectedProject]);
 
   const handleBulkImport = async () => {
     try {
@@ -54,14 +61,19 @@ export default function LotsPage() {
   const handleStatusChange = async (lotId, newStatus) => {
     try {
       await lotsApi.update(selectedProject, lotId, { status: newStatus });
-      setLots(lots.map(l => l.id === lotId ? { ...l, status: newStatus } : l));
+      setLots(current => current.map(l => l.id === lotId ? { ...l, status: newStatus } : l));
     } catch (err) {
       alert(err.response?.data?.detail || 'Error');
     }
   };
 
   const selectedProjectData = projects.find((p) => p.id === parseInt(selectedProject));
-  const filteredLots = filter === 'all' ? lots : lots.filter((l) => l.status === filter);
+  const blocks = groupLotsByBlock(lots);
+  const filteredLots = lots.filter(l =>
+    (filter === 'all' || l.status === filter) &&
+    (selectedBlock === 'all' || String(l.block ?? '').trim() === selectedBlock)
+  );
+  const visibleBlocks = groupLotsByBlock(filteredLots);
 
   const filters = [
     { key: 'all', label: 'Todos' },
@@ -106,6 +118,14 @@ export default function LotsPage() {
             ))}
           </select>
 
+          {blocks.length > 0 && <label className="lot-block-filter">
+            <span>Manzana</span>
+            <select aria-label="Filtrar por manzana" className="input" value={selectedBlock} onChange={e => setSelectedBlock(e.target.value)}>
+              <option value="all">Todas las manzanas ({blocks.length})</option>
+              {blocks.map(block => <option key={block.key} value={block.key}>{block.label} · {block.lots.length} lotes</option>)}
+            </select>
+          </label>}
+
           <div className="flex gap-1.5 flex-wrap">
             {filters.map((f) => (
               <button
@@ -139,6 +159,8 @@ export default function LotsPage() {
               <div className="absolute inset-0 rounded-full border-[2.5px] border-transparent border-t-rf-green-800 border-r-rf-green-400/40 animate-spin" />
             </div>
         </div>
+      ) : loadError ? (
+        <p role="alert" className="card p-6 text-red-600">{loadError}</p>
       ) : !selectedProject ? (
         <div className="card p-16 text-center animate-scale-in" style={{ animation: 'blur-in 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
           <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
@@ -159,8 +181,16 @@ export default function LotsPage() {
             Importar Lotes
           </button>
         </div>
+      ) : filteredLots.length === 0 ? (
+        <div className="card p-10 text-center" role="status">
+          <Layers size={28} className="mx-auto mb-4 text-rf-gray-light" />
+          <h2 className="text-lg font-semibold mb-2">No hay lotes con estos filtros</h2>
+          <p className="text-sm text-rf-gray-light mb-5">Prueba otro estado o selecciona todas las manzanas.</p>
+          <button className="btn-secondary" onClick={() => { setFilter('all'); setSelectedBlock('all'); }}>Ver todos los lotes</button>
+        </div>
       ) : (
         <>
+          <div className="lot-block-overview"><span><strong>{visibleBlocks.length}</strong> {visibleBlocks.length === 1 ? 'manzana' : 'manzanas'} · <strong>{filteredLots.length}</strong> lotes</span><p>Manzanas y lotes en orden numérico</p></div>
           <div className="flex gap-4 mb-4 text-xs text-rf-gray-light dark:text-gray-500 flex-wrap">
             {Object.entries(statusConfig).map(([key, cfg]) => (
               <span key={key} className="flex items-center gap-1.5">
@@ -170,8 +200,15 @@ export default function LotsPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {lots.map((lot, i) => {
+          <div className="lot-blocks">
+          {visibleBlocks.map(block => (
+            <section key={block.key} className="lot-block-section" aria-label={block.label}>
+              <header className="lot-block-heading">
+                <div className="lot-block-title"><span className="lot-block-icon"><Grid3X3 size={20}/></span><div><h2>{block.label}</h2><p>{selectedProjectData?.name}</p></div></div>
+                <span className="lot-block-count">{block.lots.length} {block.lots.length === 1 ? 'lote' : 'lotes'}{filter !== 'all' ? ' con este estado' : ''}</span>
+              </header>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {block.lots.map((lot, i) => {
               const cfg = statusConfig[lot.status] || statusConfig.available;
               return (
                 <div
@@ -181,19 +218,14 @@ export default function LotsPage() {
                   style={{ animation: `slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both`, animationDelay: `${Math.min(i, 12) * 25}ms` }}
                 >
                   <div className="flex items-center justify-between mb-2.5">
-                    <span className="text-sm font-bold text-rf-dark dark:text-gray-100">#{lot.lot_number}</span>
-                    {lot.block && (
-                      <span className="text-[10px] font-semibold tracking-wide uppercase text-rf-green-700 dark:text-rf-green-400 bg-rf-green-50/80 dark:bg-rf-green-900/20 px-2 py-0.5 rounded-md border border-rf-green-200/60 dark:border-rf-green-800/40">
-                        MZ {lot.block.replace(/^M/, '')}
-                      </span>
-                    )}
+                    <h3 className="text-sm font-bold text-rf-dark dark:text-gray-100">Lote {lot.lot_number}</h3>
                   </div>
                   <p className="text-xs text-rf-gray-light dark:text-gray-500 mb-1">{lot.area_sqm} m²</p>
                   <p className="text-sm font-bold text-rf-dark dark:text-gray-100 mb-3">
                     ${(lot.total_price || lot.area_sqm * (lot.price_per_sqm || 0)).toLocaleString('es-MX')}
                   </p>
                   <select
-                    aria-label={`Estado de manzana ${lot.block?.replace(/^M/, '') || 'sin asignar'}, lote ${lot.lot_number}`}
+                    aria-label={`Estado de ${blockLabel(lot.block).toLowerCase()}, lote ${lot.lot_number}`}
                     value={lot.status}
                     onChange={(e) => handleStatusChange(lot.id, e.target.value)}
                     className={`w-full text-xs rounded-lg px-2.5 py-1.5 border font-medium transition-all focus:outline-none focus:ring-2 focus:ring-rf-green-500/20 ${cfg.chip}`}
@@ -207,6 +239,9 @@ export default function LotsPage() {
                 </div>
               );
             })}
+              </div>
+            </section>
+          ))}
           </div>
         </>
       )}

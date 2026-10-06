@@ -160,3 +160,29 @@ body { background:var(--crm-bg); }
 
 /* Release animation layers after entry so fixed forms remain viewport-centered. */
 .crm-page > :is(.page-enter,.animate-fade-in) { animation:none; }
+
+/* Inventory sections preserve each block's identity, even when lot numbers repeat. */
+.lot-block-filter { display:flex; align-items:center; gap:10px; color:var(--crm-muted); font-size:12px; }
+.lot-block-filter .input { width:auto; min-width:205px; }
+.lot-block-overview { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:var(--crm-muted); font-size:12px; margin-bottom:16px; }
+.lot-block-overview strong { color:var(--crm-ink); font-weight:600; }
+.lot-block-overview p { font-size:11px; }
+.lot-blocks { display:grid; gap:28px; }
+.lot-block-section { border:1px solid var(--crm-line); border-radius:20px; padding:20px; background:#ffffff30; }
+[data-theme="dark"] .lot-block-section { background:#ffffff03; }
+.lot-block-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:18px; margin-bottom:18px; border-bottom:1px solid var(--crm-line); }
+.lot-block-title { display:flex; align-items:center; gap:12px; min-width:0; }
+.lot-block-title h2 { font-size:18px; font-weight:600; color:var(--crm-ink); letter-spacing:-.025em; }
+.lot-block-title p { font-size:11px; color:var(--crm-muted); margin-top:3px; }
+.lot-block-icon { display:flex; align-items:center; justify-content:center; width:40px; height:40px; flex:none; border:1px solid var(--crm-line); border-radius:12px; background:var(--crm-surface); color:var(--crm-muted); }
+.lot-block-count { font-size:11px; color:var(--crm-muted); background:var(--crm-surface); border:1px solid var(--crm-line); border-radius:20px; padding:6px 10px; white-space:nowrap; }
+@media (max-width:767px) {
+  .lot-block-filter { width:100%; }
+  .lot-block-filter .input { min-width:0; flex:1; }
+  .lot-block-section { padding:14px; border-radius:16px; }
+  .lot-block-heading { flex-wrap:wrap; gap:12px; padding-bottom:14px; margin-bottom:14px; }
+  .lot-block-title h2 { font-size:17px; }
+  .lot-block-icon { width:34px; height:34px; }
+  .lot-blocks { gap:22px; }
+  .lot-block-section .lot-tile { padding:12px; }
+}

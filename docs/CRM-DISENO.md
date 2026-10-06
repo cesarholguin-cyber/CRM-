@@ -24,3 +24,9 @@
 - Sin errores de consola observados durante la revisión.
 
 El CSS compartido está en `frontend/src/workspace.css`. No se cambian endpoints, formatos de solicitudes ni persistencia de datos.
+
+## Inventario organizado por manzana
+
+El inventario se divide en secciones con encabezado y cantidad de lotes. Las manzanas se ordenan de forma numérica natural y sus lotes de menor a mayor; los terrenos sin manzana quedan en una sección final identificada. Un selector permite consultar una sola manzana y combinarla con el estado del lote. Los filtros se aplican al catálogo del proyecto, con un mensaje específico si no hay coincidencias.
+
+Verificación: recorrido Proyectos → Ver lotes de Floresta, 22 manzanas del 1 al 22 y 358 lotes presentes. Manzana 1: lotes 1–11; manzana 10: lotes 1–19. Probados filtro de manzana 10 + disponibles, estado sin coincidencias y regreso a todos los lotes. Vista móvil de 390 × 844 y modo oscuro sin desbordamiento horizontal. Comprobado orden natural y conservación de registros con números de lote repetidos entre manzanas. Compilación correcta; lint sin errores nuevos. No se modificaron estados de lotes durante esta revisión.

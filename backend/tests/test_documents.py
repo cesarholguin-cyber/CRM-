@@ -135,3 +135,46 @@ async def test_multiple_files_and_missing_records(archive):
     assert await count(sessions) == 2
     assert (await http.get('/api/v1/clients/999/dossier')).status_code == 404
     assert (await http.get('/api/v1/sales/999/dossier')).status_code == 404
+
+
+async def test_oci_upload_download_and_client_dossier_share_one_object(archive, monkeypatch):
+    from test_oracle import FakeStore
+    from app.models.document import DocumentObject
+    store = FakeStore()
+    monkeypatch.setattr(documents.settings, 'DOCUMENT_STORAGE', 'oci')
+    monkeypatch.setattr(documents, 'get_object_storage', lambda: store)
+    http, sessions, app, engine = archive
+    result = await upload(http)
+    assert result.status_code == 201, result.text
+    doc = result.json()[0]
+    assert not {'bucket', 'namespace', 'object_key'} & doc.keys()
+    async with sessions() as db:
+        location = await db.get(DocumentObject, doc['id'])
+        assert location.object_key == '1'
+        assert await db.scalar(select(SaleDocument.content)) == b''
+    await engine.dispose()
+    download = await http.get(f"/api/v1/sales/1/documents/{doc['id']}/download")
+    assert download.status_code == 200 and download.content == PDF
+    dossier = (await http.get('/api/v1/clients/1/dossier')).json()
+    assert any(item['id'] == doc['id'] for sale in dossier['sales'] for item in sale['documents'])
+    app.dependency_overrides.pop(get_current_user)
+    assert (await http.get(f"/api/v1/sales/1/documents/{doc['id']}/download")).status_code == 401
+
+
+async def test_oci_failure_does_not_archive_partial_batch(archive, monkeypatch):
+    from test_oracle import FakeStore
+    store = FakeStore()
+    put = store.put
+    def fail_second(*args):
+        if store.contents:
+            raise OSError('simulated storage outage')
+        return put(*args)
+    store.put = fail_second
+    monkeypatch.setattr(documents.settings, 'DOCUMENT_STORAGE', 'oci')
+    monkeypatch.setattr(documents, 'get_object_storage', lambda: store)
+    http, sessions, _, _ = archive
+    result = await upload(http, files=[('files', ('one.txt', b'one', 'text/plain')), ('files', ('two.txt', b'two', 'text/plain'))])
+    assert result.status_code == 503
+    assert await count(sessions) == 0
+    # Ambiguous remote writes are retained for reconciliation, never blindly deleted.
+    assert len(store.contents) == 1

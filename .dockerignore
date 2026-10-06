@@ -23,3 +23,16 @@ build.sh
 .venv*
 backend/data
 ACCESO-CRM-PRUEBAS.txt
+
+# Oracle credentials, wallets and migration backups
+.oci/
+wallet*/
+Wallet*/
+*.pem
+*.p12
+*.sso
+*.key
+*.db-wal
+*.db-shm
+*.sqlite*
+.env.oracle

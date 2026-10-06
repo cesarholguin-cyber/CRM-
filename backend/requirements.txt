@@ -22,3 +22,6 @@ slowapi==0.1.9
 aiofiles==24.1.0
 
 aiosqlite==0.22.1
+
+oracledb==3.4.2
+oci==2.161.1

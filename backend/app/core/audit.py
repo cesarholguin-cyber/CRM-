@@ -1,13 +1,16 @@
+from sqlalchemy.dialects.oracle import TIMESTAMP
+from sqlalchemy import Identity
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, BigInteger
 from app.core.database import Base
+from app.core.db_types import PortableJSON
 
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
-    timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), Identity(), primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     user_id = Column(Integer, nullable=True)
     username = Column(String(100), nullable=True)
     action = Column(String(50), nullable=False, index=True)
@@ -15,16 +18,20 @@ class AuditLog(Base):
     entity_id = Column(Integer, nullable=True)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(String(500), nullable=True)
-    details = Column(JSON, nullable=True)
-    old_values = Column(JSON, nullable=True)
-    new_values = Column(JSON, nullable=True)
+    details = Column(PortableJSON, nullable=True)
+    old_values = Column(PortableJSON, nullable=True)
+    new_values = Column(PortableJSON, nullable=True)
 
 
 # Synchronous audit writer for use within async contexts
 from sqlalchemy import create_engine
 from app.core.config import settings
+from app.core.oracle_session import configure_oracle_session
 
-_sync_engine = create_engine(settings.DATABASE_URL_SYNC, pool_pre_ping=True)
+_sync_engine = create_engine(settings.DATABASE_URL_SYNC, pool_pre_ping=True, hide_parameters=True,
+    connect_args=settings.database_connect_args if settings.DATABASE_MODE == "oracle" else {})
+
+configure_oracle_session(_sync_engine)
 
 
 def write_audit_log(

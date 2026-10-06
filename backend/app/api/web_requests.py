@@ -72,6 +72,11 @@ async def lock_key(db, key):
     # protect inventory; this lock serializes retries and matching contacts.
     if db.bind.dialect.name == 'sqlite' and not db.in_transaction():
         await db.execute(text('BEGIN IMMEDIATE'))
+    if db.bind.dialect.name == 'oracle':
+        from app.models.oracle import IntakeMutex
+        mutex = await db.scalar(select(IntakeMutex.id).where(IntakeMutex.id == 1).with_for_update())
+        if mutex is None:
+            raise HTTPException(503, 'La migración de Oracle está pendiente.')
     if db.bind.dialect.name == 'postgresql':
         lock_id = int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], 'big', signed=True)
         await db.execute(text('SELECT pg_advisory_xact_lock(:key)'), {'key': lock_id})

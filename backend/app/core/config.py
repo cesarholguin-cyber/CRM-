@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from typing import List, Optional, Literal
 import os
 import secrets
 from pathlib import Path
@@ -10,7 +10,33 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     DEBUG: bool = False
 
-    DATABASE_MODE: str = "embedded"
+    DATABASE_MODE: Literal["embedded", "external", "oracle"] = "embedded"
+    ORACLE_USER: str = ""
+    ORACLE_PASSWORD: str = ""
+    ORACLE_DSN: str = ""
+    ORACLE_CONFIG_DIR: str = ""
+    ORACLE_WALLET_LOCATION: str = ""
+    ORACLE_WALLET_PASSWORD: str = ""
+
+    DOCUMENT_STORAGE: Literal["database", "oci"] = "database"
+    OCI_CONFIG_FILE: str = "~/.oci/config"
+    OCI_CONFIG_PROFILE: str = "DEFAULT"
+    OCI_NAMESPACE: str = ""
+    OCI_BUCKET: str = ""
+    OCI_COMPARTMENT_ID: str = ""
+
+    @property
+    def database_connect_args(self):
+        if self.DATABASE_MODE == "oracle":
+            args = {"user": self.ORACLE_USER, "password": self.ORACLE_PASSWORD,
+                    "dsn": self.ORACLE_DSN}
+            for name in ("config_dir", "wallet_location", "wallet_password"):
+                value = getattr(self, "ORACLE_" + name.upper())
+                if value:
+                    args[name] = value
+            return args
+        return {"prepare_threshold": None} if "psycopg" in self.DATABASE_URL else {}
+
     # Database — Render provides DATABASE_URL in sync format; we auto-convert
     DATABASE_URL: str = ""
     DATABASE_URL_SYNC: str = ""
@@ -69,6 +95,14 @@ class Settings(BaseSettings):
             database = directory / "crm-pruebas.db"
             self.DATABASE_URL = "sqlite+aiosqlite:///" + str(database)
             self.DATABASE_URL_SYNC = "sqlite:///" + str(database)
+        if self.DATABASE_MODE == "oracle":
+            if not all((self.ORACLE_USER, self.ORACLE_PASSWORD, self.ORACLE_DSN)):
+                raise ValueError("Configura ORACLE_USER, ORACLE_PASSWORD y ORACLE_DSN.")
+            if len(self.SECRET_KEY) < 32 or self.SECRET_KEY == "change-me-in-production":
+                raise ValueError("Configura SECRET_KEY (32 caracteres como mínimo) antes de activar Oracle.")
+            self.DATABASE_URL = self.DATABASE_URL_SYNC = "oracle+oracledb://@"
+        if self.DOCUMENT_STORAGE == "oci" and not all((self.OCI_NAMESPACE, self.OCI_BUCKET)):
+            raise ValueError("Configura OCI_NAMESPACE y OCI_BUCKET antes de activar el bucket.")
         # Auto-convert URLs to use psycopg driver for Supabase pgbouncer compatibility
         if self.DATABASE_URL:
             # Replace any driver with psycopg

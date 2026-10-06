@@ -1,5 +1,7 @@
+from sqlalchemy.dialects.oracle import TIMESTAMP
+from sqlalchemy import Identity
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, Boolean, Text, DateTime, ForeignKey, Enum as SAEnum, Index, text
+from sqlalchemy import Column, Integer, String, Float, Boolean, Text, DateTime, ForeignKey, Enum as SAEnum, Index, text, case
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -19,9 +21,9 @@ class Sale(Base):
     __tablename__ = "sales"
     __table_args__ = (Index("uq_sales_active_lot", "lot_id", unique=True,
         postgresql_where=text("status NOT IN ('CANCELLED', 'REVERSED')"),
-        sqlite_where=text("status NOT IN ('CANCELLED', 'REVERSED')")),)
+        sqlite_where=text("status NOT IN ('CANCELLED', 'REVERSED')")).ddl_if(dialect=("sqlite", "postgresql")),)
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(), primary_key=True, autoincrement=True)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False, index=True)
     lot_id = Column(Integer, ForeignKey("lots.id"), nullable=False, index=True)
     agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -38,15 +40,15 @@ class Sale(Base):
     notes = Column(Text, nullable=True)
 
     # Reservation expiry
-    reservation_expires_at = Column(DateTime(timezone=True), nullable=True)
+    reservation_expires_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), nullable=True)
 
     # Commission
     commission_percentage = Column(Float, nullable=True)
     commission_amount = Column(Float, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    closed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    closed_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), nullable=True)
 
     # Relationships
     client = relationship("Client", back_populates="sales")
@@ -62,19 +64,19 @@ class Sale(Base):
 class PaymentPlan(Base):
     __tablename__ = "payment_plans"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(), primary_key=True, autoincrement=True)
     sale_id = Column(Integer, ForeignKey("sales.id"), nullable=False, index=True)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False, index=True)
     installment_number = Column(Integer, nullable=False)
-    due_date = Column(DateTime(timezone=True), nullable=False)
+    due_date = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), nullable=False)
     amount = Column(Float, nullable=False)
     paid_amount = Column(Float, nullable=True, default=0)
     is_paid = Column(Boolean, default=False)
-    paid_at = Column(DateTime(timezone=True), nullable=True)
+    paid_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), nullable=True)
     late_fee = Column(Float, nullable=True, default=0)
     notes = Column(String(500), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc))
 
     sale = relationship("Sale", back_populates="payment_plans")
     client = relationship("Client", back_populates="payment_plans")
@@ -86,7 +88,7 @@ class PaymentPlan(Base):
 class Payment(Base):
     __tablename__ = "payments"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(), primary_key=True, autoincrement=True)
     sale_id = Column(Integer, ForeignKey("sales.id"), nullable=False, index=True)
     payment_plan_id = Column(Integer, ForeignKey("payment_plans.id"), nullable=True)
     amount = Column(Float, nullable=False)
@@ -96,6 +98,11 @@ class Payment(Base):
     notes = Column(String(500), nullable=True)
     paid_by = Column(String(255), nullable=True)  # who made the payment
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc))
 
     sale = relationship("Sale", back_populates="payments")
+
+# Oracle has no partial indexes: NULL entries do not participate in this unique index.
+Index("uq_sales_active_lot_oracle", case(
+    (Sale.status.not_in([SaleStatus.CANCELLED, SaleStatus.REVERSED]), Sale.lot_id),
+    else_=None), unique=True).ddl_if(dialect="oracle")

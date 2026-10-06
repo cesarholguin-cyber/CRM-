@@ -1,3 +1,5 @@
+from sqlalchemy.dialects.oracle import TIMESTAMP
+from sqlalchemy import Identity
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, Boolean, Text, DateTime, Enum as SAEnum
 from sqlalchemy.orm import relationship
@@ -15,7 +17,7 @@ class ProjectStatus(str, enum.Enum):
 class Project(Base):
     __tablename__ = "projects"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(), primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
     slug = Column(String(255), unique=True, nullable=False)
     description = Column(Text, nullable=True)
@@ -38,8 +40,8 @@ class Project(Base):
     cover_image_url = Column(String(500), nullable=True)
     gallery = Column(String(2000), nullable=True)  # JSON array of URLs
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     lots = relationship("Lot", back_populates="project", cascade="all, delete-orphan")

@@ -1,3 +1,5 @@
+from sqlalchemy.dialects.oracle import TIMESTAMP
+from sqlalchemy import Identity
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
@@ -15,7 +17,7 @@ class LotStatus(str, enum.Enum):
 class Lot(Base):
     __tablename__ = "lots"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, Identity(), primary_key=True, autoincrement=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
     lot_number = Column(Integer, nullable=False)
     block = Column(String(50), nullable=True)
@@ -29,10 +31,10 @@ class Lot(Base):
 
     # Sale info
     sold_to_client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
-    sold_at = Column(DateTime(timezone=True), nullable=True)
+    sold_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), nullable=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True).with_variant(TIMESTAMP(timezone=True), "oracle"), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
     project = relationship("Project", back_populates="lots")

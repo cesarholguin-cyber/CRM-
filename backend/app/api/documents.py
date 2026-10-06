@@ -6,6 +6,8 @@ from pathlib import PurePosixPath
 from urllib.parse import quote
 from zipfile import ZipFile, BadZipFile
 import re
+import asyncio
+import logging
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
@@ -17,7 +19,8 @@ from app.api.deps import get_current_user, get_request_info
 from app.core.audit import AuditLog
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.document import SaleDocument
+from app.models.document import SaleDocument, DocumentObject
+from app.services.object_storage import get_object_storage
 from app.models.sale import Sale
 from app.models.client import Client
 from app.models.lot import Lot
@@ -149,6 +152,18 @@ async def upload_documents(
         # Validate the whole batch before writing; documents and audit commit atomically.
         db.add_all(rows)
         await db.flush()
+        if settings.DOCUMENT_STORAGE == "oci":
+            try:
+                storage = get_object_storage()
+                for doc in rows:
+                    location = await asyncio.to_thread(storage.put, sale.id, doc.content, doc.content_type)
+                    db.add(DocumentObject(document_id=doc.id, **location))
+                    doc.content = b""  # BLOB placeholder; the authenticated API resolves the location.
+                await db.flush()
+            except Exception:
+                await db.rollback()
+                logging.getLogger(__name__).error("OCI upload failed; no document metadata committed")
+                raise HTTPException(503, "No se pudieron archivar los documentos. Intenta nuevamente.")
         db.add(AuditLog(user_id=user.id, username=user.email, action="SALE_DOCUMENTS_UPLOADED",
                         entity_type="sale", entity_id=sale.id,
                         details={"document_ids": [doc.id for doc in rows], "category": category.value},
@@ -167,10 +182,21 @@ async def download_document(sale_id: int, document_id: int, request: Request,
                           .where(SaleDocument.id == document_id, SaleDocument.sale_id == sale_id))
     if not doc:
         raise HTTPException(404, "Documento no encontrado en esta venta")
+    location = await db.get(DocumentObject, doc.id)
+    content = doc.content
+    if location:
+        try:
+            content = await asyncio.to_thread(get_object_storage().get, location.namespace, location.bucket,
+                                             location.object_key, doc.size_bytes, doc.sha256)
+        except Exception:
+            logging.getLogger(__name__).error("OCI download failed for document %s", doc.id)
+            raise HTTPException(503, "El documento no está disponible en este momento. Intenta nuevamente.")
+    if len(content) != doc.size_bytes or sha256(content).hexdigest() != doc.sha256:
+        raise HTTPException(503, "No se pudo verificar el documento archivado.")
     db.add(AuditLog(user_id=user.id, username=user.email, action="SALE_DOCUMENT_DOWNLOADED",
                     entity_type="sale_document", entity_id=doc.id, **get_request_info(request)))
     await db.commit()
-    return Response(content=doc.content, media_type=doc.content_type, headers={
+    return Response(content=content, media_type=doc.content_type, headers={
         "Content-Disposition": "attachment; filename*=UTF-8''" + quote(doc.filename, safe=""),
         "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "sandbox; default-src 'none'",

@@ -26,9 +26,16 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[f"{settings.RATE_
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create tables
+    # Oracle is initialized by the migration command, never by an app worker.
+    if settings.DATABASE_MODE == "oracle":
+        from sqlalchemy import select
+        from app.models.oracle import SchemaMigration
+        async with async_session_factory() as session:
+            if await session.get(SchemaMigration, "oracle-v1-ready") is None:
+                raise RuntimeError("Completa y verifica la migración de Oracle antes de iniciar el CRM.")
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        if settings.DATABASE_MODE != "oracle":
+            await conn.run_sync(Base.metadata.create_all)
         from app.core.reservation_schema import ensure_reservation_history
         await ensure_reservation_history(conn)
     logger.info("Database tables created/verified")

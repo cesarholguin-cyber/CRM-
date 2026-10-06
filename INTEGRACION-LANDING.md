@@ -29,7 +29,7 @@ Las operaciones se serializan con `BEGIN IMMEDIATE` en SQLite, y con bloqueos de
 
 ## Base definitiva
 
-Configurar `DATABASE_MODE=external`, `DATABASE_URL` y `DATABASE_URL_SYNC` con el servidor PostgreSQL definitivo y credenciales privadas. Migrar datos de forma deliberada; el cambio de modo no traslada los datos temporales. Configurar claves propias de autenticación y cifrado, usuarios definitivos y orígenes CORS de la landing. El administrador de prueba no se crea en modo externo.
+El proveedor elegido es Oracle. Ver [MIGRACION-ORACLE.md](MIGRACION-ORACLE.md) para configuración, respaldo, importación verificada y bucket privado OCI. Cambiar el modo no traslada datos automáticamente; conservar las claves actuales durante la copia. SQLite sigue siendo el modo por defecto hasta completar la migración y activar las variables en Easypanel. El administrador de prueba no se crea en modo Oracle.
 
 
 ## Acciones individuales de Apartados

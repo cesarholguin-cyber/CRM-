@@ -14,3 +14,16 @@ node_modules/
 
 ACCESO-CRM-PRUEBAS.txt
 backend/data/
+
+# Oracle credentials, wallets and migration backups
+.oci/
+wallet*/
+Wallet*/
+*.pem
+*.p12
+*.sso
+*.key
+*.db-wal
+*.db-shm
+*.sqlite*
+.env.oracle

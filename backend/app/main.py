@@ -173,7 +173,9 @@ async def serve_frontend(full_path: str):
     if full_path.startswith("api/"):
         raise HTTPException(status_code=404)
     # Try to serve the exact file first (for assets, etc.)
-    file_path = frontend_dist / full_path
+    file_path = (frontend_dist / full_path).resolve()
+    if not file_path.is_relative_to(frontend_dist.resolve()):
+        raise HTTPException(status_code=404)
     if full_path and file_path.is_file():
         return FileResponse(str(file_path))
     # For everything else, serve index.html (SPA routing)

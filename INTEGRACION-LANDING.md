@@ -41,3 +41,18 @@ Las acciones requieren sesión. Las transiciones bloquean el registro del lote, 
 Validación (2026-10-06): 29 pruebas de integración; recorrido local en navegador con reserva M1/L4 → cancelación → Disponible en el plano sin recarga; cita M1/L5 → Venta → cancelación → Disponible. Ambos registros QA quedan cancelados en el historial local. Verificados diálogo, teclado, tema claro/oscuro y consola sin errores. El control de viewport no aplicó el ancho móvil solicitado, por lo que esa comprobación visual queda pendiente.
 
 Publicación: desplegar la nueva versión del CRM en Easypanel (frontend y backend). La landing existente consume el catálogo actualizado y no necesita cambios para estas acciones.
+
+
+## Expedientes de Ventas y Clientes
+
+Ventas incorpora «Subir archivos» y «Ver expediente» en ambas vistas. La ficha de Clientes abre sus datos y las ventas asociadas, con los mismos documentos agrupados por lote. «Editar información» conserva la edición previa del cliente.
+
+Cada archivo se vincula únicamente a `sale_id`; cliente y lote se obtienen de esa venta. Categorías: titularidad, documentos del cliente, contratos, comprobantes y otros. Cada carga permite hasta 10 archivos, 10 MB por archivo y 50 MB por lote de carga, con descripción opcional. Formatos: PDF, JPG/JPEG, PNG, WebP, DOCX, XLSX y TXT UTF-8. Las cargas se validan completas antes de guardar; no se guardan lotes parciales. Se registran cargas y descargas en auditoría. Los archivos no se publican en la landing ni en recursos estáticos; su descarga exige la sesión del CRM.
+
+Al iniciar, el backend crea automáticamente la nueva tabla `sale_documents` si no existe. Los bytes originales se guardan en la propia base de datos (columna binaria), junto con tamaño, hash, categoría, descripción, fecha y usuario que subió el archivo. Consultar los listados no carga el contenido binario. No requiere otro proveedor de archivos. Cancelar una operación conserva sus documentos; no hay borrado de archivos en esta entrega.
+
+El expediente muestra `reservation_expires_at` y días restantes para apartados. No renueva los 15 días, no convierte un archivo en una venta finalizada y no modifica disponibilidad al cargar documentación. La formalización sigue utilizando las acciones de venta existentes.
+
+Despliegue: actualizar frontend y backend desde `master` en Easypanel. Es indispensable conservar el volumen existente en `/app/backend/data`: contiene SQLite, sus archivos y la clave de sesión. Los documentos persisten con la base, por lo que las copias de seguridad deben incluirla. Un despliegue sin ese volumen puede reiniciar la base temporal y perder los expedientes.
+
+Validación: 38 pruebas de integración, incluidas persistencia de archivos, acceso autenticado, separación entre clientes/ventas, descarga exacta, conservación tras cancelación, cargas múltiples, lotes inválidos sin escrituras parciales, límites y nombres de archivo. Compilación del frontend y revisión local con datos ficticios: carga desde Ventas → consulta desde Clientes, respuesta de descarga 200, diálogo por teclado, tema claro/oscuro y formulario móvil de 390 px sin desbordamiento horizontal. El navegador integrado no notificó el evento de descarga, aunque el servidor entregó el archivo y las pruebas comprobaron sus bytes.

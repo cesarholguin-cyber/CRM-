@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import SaleDossier from '../components/SaleDossier';
 import { useSearchParams } from 'react-router-dom';
 import { salesApi, clientsApi, lotsApi, projectsApi } from '../lib/api';
-import { ShoppingCart, Plus, TrendingUp, DollarSign, Calendar, LayoutGrid, List, ChevronDown, X } from 'lucide-react';
+import { ShoppingCart, Plus, TrendingUp, DollarSign, Calendar, LayoutGrid, List, ChevronDown, X, Upload, FolderOpen } from 'lucide-react';
 
 const statusConfig = {
   reserved: { label: 'Apartado', color: 'bg-amber-100/80 text-amber-700 border-amber-200/50 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/50', dot: 'bg-amber-500' },
@@ -27,6 +28,7 @@ export default function SalesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedSaleId = searchParams.get('sale_id');
   const [sales, setSales] = useState([]);
+  const [dossier, setDossier] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list');
   const [filter, setFilter] = useState('');
@@ -107,6 +109,8 @@ export default function SalesPage() {
   const findClientName = (id) => clients.find((c) => c.id === id)?.full_name?.replace(/^dec::/, '') || `Cliente #${id}`;
   const visibleSales = selectedSaleId ? sales.filter(s => String(s.id) === selectedSaleId) : sales;
   const getSalesByStatus = (status) => visibleSales.filter((s) => s.status === status);
+
+  const archiveActions = sale => <div className="sale-archive-actions"><button className="btn-primary" onClick={() => setDossier({ id: sale.id, upload: true })}><Upload size={14}/>Subir archivos</button><button className="btn-secondary" onClick={() => setDossier({ id: sale.id, upload: false })}><FolderOpen size={14}/>Ver expediente</button></div>;
 
   return (
     <div className="animate-fade-in max-w-7xl mx-auto">
@@ -216,6 +220,7 @@ export default function SalesPage() {
                           <span className="text-xs font-bold text-rf-green-800 dark:text-rf-green-300">${(sale.sale_price || 0).toLocaleString('es-MX')}</span>
                         </div>
                         <p className="text-xs text-rf-gray-light dark:text-gray-500 mb-1">{findClientName(sale.client_id)}</p>
+                        {archiveActions(sale)}
                         {sale.monthly_payment && (
                           <div className="flex items-center gap-3 text-[11px] text-rf-gray-light dark:text-gray-500 mt-2 pt-2 border-t border-gray-100 dark:border-t-gray-700/50">
                             <span className="flex items-center gap-1"><DollarSign size={10} /> ${sale.monthly_payment.toLocaleString('es-MX')}/mes</span>
@@ -258,6 +263,7 @@ export default function SalesPage() {
                     <span className="text-lg font-bold text-rf-dark dark:text-gray-100">${(sale.sale_price || 0).toLocaleString('es-MX')}</span>
                   </div>
                 </div>
+                {archiveActions(sale)}
                 {sale.monthly_payment && (
                   <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-t-gray-700/50 text-xs text-rf-gray dark:text-gray-400">
                     <span className="flex items-center gap-1.5"><DollarSign size={12} className="text-rf-gray-light dark:text-gray-500" /> Pago mensual: <strong className="text-rf-dark dark:text-gray-100">${sale.monthly_payment.toLocaleString('es-MX')}</strong></span>
@@ -269,6 +275,8 @@ export default function SalesPage() {
           })}
         </div>
       )}
+
+      {dossier && <SaleDossier saleId={dossier.id} initialUpload={dossier.upload} onClose={() => setDossier(null)}/> }
 
       {/* Modal */}
       {showModal && (

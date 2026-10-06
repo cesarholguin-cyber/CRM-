@@ -9,3 +9,5 @@
 - Inventario: separar visualmente los lotes por manzana, ordenar manzanas numéricamente (1, 2, …, 10) y lotes de menor a mayor dentro de cada sección. Mantener esta organización al entrar desde «Ver lotes» de un proyecto.
 
 - Apartados: gestionar cada lote individualmente con Venta, Ya se ha vendido el lote y Cancelado. Conservar historial; cancelar libera únicamente el apartado vinculado, nunca ventas ni reservas de otras solicitudes.
+
+- Ventas y Clientes comparten un expediente documental por venta/lote. Permitir cargas múltiples clasificadas (titularidad, cliente, contratos, pagos y otros), conservar archivo original, descripción y fecha, y mostrar el plazo existente del apartado de 15 días. Abrir el cliente debe mostrar sus datos y expedientes separados por venta. No duplicar archivos entre secciones ni cambiar el estado del lote al subir documentos. Archivos y descargas requieren sesión y se conservan en el historial.

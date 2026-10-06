@@ -11,3 +11,5 @@ __all__ = [
     "Client", "ClientStatus", "LeadSource", "ClientInteraction",
     "Sale", "SaleStatus", "PaymentPlan", "Payment",
 ]
+
+from app.models.document import SaleDocument

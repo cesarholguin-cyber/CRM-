@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import SaleDossier from '../components/SaleDossier';
 import { clientsApi } from '../lib/api';
 import { Users, Plus, Search, Phone, Mail, MessageCircle, Filter, UserPlus, ChevronDown, X } from 'lucide-react';
 
@@ -15,6 +16,7 @@ const statusConfig = {
 
 export default function ClientsPage() {
   const [clients, setClients] = useState([]);
+  const [dossierClient, setDossierClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -172,7 +174,7 @@ export default function ClientsPage() {
                       key={client.id}
                       className="border-b border-gray-50 dark:border-gray-700/30 hover:bg-rf-green-50/30 dark:hover:bg-rf-green-900/10 transition-all duration-200 cursor-pointer group"
                       style={{ animation: 'fade-slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both', animationDelay: `${Math.min(0.05 + i * 0.03, 0.5)}s` }}
-                      onClick={() => openEdit(client)}
+                      onClick={() => setDossierClient(client.id)}
                     >
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
@@ -180,7 +182,7 @@ export default function ClientsPage() {
                             {getInitials(client.full_name)}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-rf-dark dark:text-gray-100 group-hover:text-rf-green-800 dark:group-hover:text-rf-green-300 transition-colors truncate">{client.full_name}</p>
+                            <p className="text-sm font-medium text-rf-dark dark:text-gray-100 group-hover:text-rf-green-800 dark:group-hover:text-rf-green-300 transition-colors truncate"><button className="client-dossier-link" onClick={e => { e.stopPropagation(); setDossierClient(client.id); }}>{client.full_name?.replace(/^dec::/, '')}</button></p>
                             {client.notes && <p className="text-[11px] text-rf-gray-light dark:text-gray-500 mt-0.5 line-clamp-1">{client.notes}</p>}
                           </div>
                         </div>
@@ -241,6 +243,8 @@ export default function ClientsPage() {
           </div>
         </div>
       )}
+
+      {dossierClient && <SaleDossier clientId={dossierClient} onClose={() => setDossierClient(null)} onEditClient={client => { setDossierClient(null); openEdit(client); }}/> }
 
       {/* Modal */}
       {showModal && (

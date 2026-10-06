@@ -115,3 +115,11 @@ export const webRequestsApi = {
   update: (id, status) => api.patch(`/web-requests/${id}`, { status }),
   action: (id, action) => api.post(`/web-requests/${id}/actions`, { action }),
 };
+
+// Authenticated, shared sale/client document archive.
+export const documentsApi = {
+  sale: (id) => api.get(`/sales/${id}/dossier`),
+  client: (id) => api.get(`/clients/${id}/dossier`),
+  upload: (id, data, onUploadProgress) => api.post(`/sales/${id}/documents`, data, { headers: { 'Content-Type': undefined }, onUploadProgress }),
+  download: (saleId, documentId) => api.get(`/sales/${saleId}/documents/${documentId}/download`, { responseType: 'blob' }),
+};

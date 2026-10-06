@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone, timedelta
 
+from app.services.reservation_actions import locked_sale, change_sale_status
 from app.core.database import get_db
 from app.core.audit import write_audit_log
 from app.models.sale import Sale, SaleStatus, PaymentPlan, Payment
@@ -125,58 +126,16 @@ async def update_sale(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
-    result = await db.execute(select(Sale).where(Sale.id == sale_id))
-    sale = result.scalar_one_or_none()
-    if not sale:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
-
-    old_values = {}
+    sale, lot = await locked_sale(db, sale_id)
     update_dict = sale_data.model_dump(exclude_unset=True)
-    for field, value in update_dict.items():
-        old_values[field] = getattr(sale, field)
-        setattr(sale, field, value)
-
-    # Handle status transitions
+    old_values = {field: getattr(sale, field) for field in update_dict}
     if "status" in update_dict:
-        new_status = SaleStatus(update_dict["status"])
-        old_status = SaleStatus(old_values["status"])
-        result = await db.execute(select(Lot).where(Lot.id == sale.lot_id))
-        lot = result.scalar_one_or_none()
-        if not lot:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lot not found")
-
-        if new_status == SaleStatus.PAID:
-            # Moving from reserved/cancelled to paid = sold
-            if old_status != SaleStatus.PAID:
-                lot.status = LotStatus.SOLD
-                lot.sold_at = datetime.now(timezone.utc)
-                # Update project counters
-                project = await db.execute(select(Project).where(Project.id == lot.project_id))
-                project = project.scalar_one_or_none()
-                if project:
-                    if old_status == SaleStatus.RESERVED:
-                        project.available_lots = max(0, project.available_lots - 1)
-                        project.sold_lots = (project.sold_lots or 0) + 1
-                    else:
-                        project.sold_lots = (project.sold_lots or 0) + 1
-        elif new_status == SaleStatus.CANCELLED:
-            # Liberate the lot for any non-PAID status (lot is RESERVED)
-            if old_status == SaleStatus.PAID:
-                lot.status = LotStatus.AVAILABLE
-                lot.sold_to_client_id = None
-                project = await db.execute(select(Project).where(Project.id == lot.project_id))
-                project = project.scalar_one_or_none()
-                if project:
-                    project.sold_lots = max(0, (project.sold_lots or 0) - 1)
-                    project.available_lots = min(project.total_lots, project.available_lots + 1)
-            elif old_status != SaleStatus.CANCELLED:
-                # RESERVED, OPTION_SIGNED, CONTRACT_SIGNED, FINANCING — lot is RESERVED
-                lot.status = LotStatus.AVAILABLE
-                lot.sold_to_client_id = None
-                project = await db.execute(select(Project).where(Project.id == lot.project_id))
-                project = project.scalar_one_or_none()
-                if project:
-                    project.available_lots = min(project.total_lots, project.available_lots + 1)
+        if update_dict['status'] is None:
+            raise HTTPException(422, 'Selecciona un estado válido.')
+        await change_sale_status(db, sale, lot, update_dict['status'])
+    for field, value in update_dict.items():
+        if field != 'status':
+            setattr(sale, field, value)
 
     await db.commit()
     await db.refresh(sale)

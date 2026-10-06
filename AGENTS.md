@@ -7,3 +7,5 @@
 - Las credenciales y bases de prueba no se versionan. No mostrar tokens presentes en las direcciones remotas de Git.
 
 - Inventario: separar visualmente los lotes por manzana, ordenar manzanas numéricamente (1, 2, …, 10) y lotes de menor a mayor dentro de cada sección. Mantener esta organización al entrar desde «Ver lotes» de un proyecto.
+
+- Apartados: gestionar cada lote individualmente con Venta, Ya se ha vendido el lote y Cancelado. Conservar historial; cancelar libera únicamente el apartado vinculado, nunca ventas ni reservas de otras solicitudes.

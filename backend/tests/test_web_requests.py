@@ -28,6 +28,7 @@ from app.api.deps import get_current_user
 @pytest_asyncio.fixture
 async def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(sales, "write_audit_log", lambda *args,**kwargs:None)
+    monkeypatch.setattr(web_requests, "write_audit_log", lambda *args,**kwargs:None)
     engine=create_async_engine('sqlite+aiosqlite:///'+str(tmp_path/'test.db'))
     async with engine.begin() as c: await c.run_sync(Base.metadata.create_all)
     sessions=async_sessionmaker(engine,expire_on_commit=False)
@@ -147,3 +148,96 @@ async def test_simultaneous_retries_share_one_receipt(setup):
     responses=await asyncio.gather(send(http,data),send(http,data))
     assert all(r.status_code==200 for r in responses)
     assert responses[0].json()==responses[1].json()
+
+async def lot_state(http, block='M1', number=1):
+    catalog=(await http.get('/api/v1/public/catalog/floresta-campestre')).json()
+    return next(l['status'] for l in catalog['lots'] if l['block']==block and l['lot_number']==number)
+
+async def visit_request(http, **changes):
+    data=payload();data.update(kind='visit',preferred_date=str(date.today()+timedelta(days=3)));data.update(changes)
+    response=await send(http,data);assert response.status_code==200,response.text
+    return int(response.json()['reference'].split('-')[1])
+
+@pytest.mark.asyncio
+async def test_cancel_releases_public_catalog_and_retry_cannot_release_new_reservation(setup):
+    http,_,app=setup;await send(http,payload());authorize(app)
+    assert await lot_state(http)=='reserved'
+    assert (await http.put('/api/v1/sales/1',json={'status':'cancelled'})).status_code==200
+    assert await lot_state(http)=='available'
+    data=payload();data['phone']='6620000001';assert (await send(http,data)).status_code==200
+    assert (await http.put('/api/v1/sales/1',json={'status':'cancelled'})).status_code==200
+    assert await lot_state(http)=='reserved'
+    assert (await http.put('/api/v1/sales/1',json={'status':'paid'})).status_code==409
+
+@pytest.mark.asyncio
+async def test_sold_lot_cannot_be_released_as_reservation(setup):
+    http,_,app=setup;await send(http,payload());authorize(app)
+    assert (await http.put('/api/v1/sales/1',json={'status':'paid'})).status_code==200
+    assert await lot_state(http)=='sold'
+    assert (await http.put('/api/v1/sales/1',json={'status':'cancelled'})).status_code==409
+    assert await lot_state(http)=='sold'
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('status',['available','reserved','sold','blocked'])
+async def test_cancel_unlinked_visit_preserves_inventory(setup,status):
+    http,sessions,app=setup;rid=await visit_request(http);authorize(app)
+    async with sessions() as db:
+        lot=await db.get(Lot,1);lot.status=LotStatus(status);await db.commit()
+    response=await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'cancel'})
+    assert response.status_code==200,response.text
+    assert await lot_state(http)==status
+
+@pytest.mark.asyncio
+async def test_visit_to_sale_idempotent_then_cancel_and_rebook(setup):
+    http,sessions,app=setup;rid=await visit_request(http);authorize(app)
+    first=await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sale'})
+    assert first.status_code==200,first.text
+    second=await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sale'})
+    assert first.json()['sale_id']==second.json()['sale_id']
+    assert await lot_state(http)=='reserved'
+    response=await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'cancel'})
+    assert response.status_code==200,response.text
+    assert await lot_state(http)=='available'
+    assert (await send(http,payload())).status_code==200
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'cancel'})).status_code==200
+    assert await lot_state(http)=='reserved'
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sold'})).status_code==409
+
+@pytest.mark.asyncio
+async def test_visit_to_sold_is_atomic_and_retains_history(setup):
+    http,sessions,app=setup;rid=await visit_request(http);authorize(app)
+    response=await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sold'})
+    assert response.status_code==200,response.text
+    assert await lot_state(http)=='sold'
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sold'})).status_code==200
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'cancel'})).status_code==409
+    async with sessions() as db:
+        assert await db.scalar(select(func.count()).select_from(Sale))==1
+        project=await db.get(Project,1);assert project.available_lots==1 and project.sold_lots==2
+    feed=(await http.get('/api/v1/web-requests')).json();assert feed[0]['status']=='sold'
+
+@pytest.mark.asyncio
+async def test_visit_cannot_sell_other_customers_reserved_lot(setup):
+    http,_,app=setup;rid=await visit_request(http,phone='6620000001')
+    await send(http,payload());authorize(app)
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sold'})).status_code==409
+    assert await lot_state(http)=='reserved'
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'cancel'})).status_code==200
+    assert await lot_state(http)=='reserved'
+
+@pytest.mark.asyncio
+async def test_request_actions_require_auth_and_lot_for_sale(setup):
+    http,_,app=setup;rid=await visit_request(http,block=None,lot_number=None)
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'cancel'})).status_code==401
+    authorize(app)
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sold'})).status_code==409
+    assert (await http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'cancel'})).status_code==200
+
+@pytest.mark.asyncio
+async def test_simultaneous_visit_conversion_creates_one_sale(setup):
+    import asyncio
+    http,sessions,app=setup;rid=await visit_request(http);authorize(app)
+    responses=await asyncio.gather(*[http.post(f'/api/v1/web-requests/{rid}/actions',json={'action':'sale'}) for _ in range(2)])
+    assert all(r.status_code==200 for r in responses),[r.text for r in responses]
+    assert responses[0].json()['sale_id']==responses[1].json()['sale_id']
+    async with sessions() as db:assert await db.scalar(select(func.count()).select_from(Sale))==1

@@ -30,3 +30,14 @@ Las operaciones se serializan con `BEGIN IMMEDIATE` en SQLite, y con bloqueos de
 ## Base definitiva
 
 Configurar `DATABASE_MODE=external`, `DATABASE_URL` y `DATABASE_URL_SYNC` con el servidor PostgreSQL definitivo y credenciales privadas. Migrar datos de forma deliberada; el cambio de modo no traslada los datos temporales. Configurar claves propias de autenticación y cifrado, usuarios definitivos y orígenes CORS de la landing. El administrador de prueba no se crea en modo externo.
+
+
+## Acciones individuales de Apartados
+
+Al abrir un apartado o una cita aparecen Venta, Ya se ha vendido el lote y Cancelado. Venta abre el registro vinculado; para una cita con lote disponible, primero confirma la creación del apartado y luego abre Ventas. Marcar vendido actualiza el inventario público. Cancelado libera el lote cuando hay un apartado vinculado; una cita sin apartado sólo cancela su seguimiento. Las operaciones cerradas permanecen en el historial y no pueden reactivarse accidentalmente.
+
+Las acciones requieren sesión. Las transiciones bloquean el registro del lote, verifican su propietario y recalculan los contadores del proyecto. Reintentar una cancelación anterior no afecta una reserva posterior. No se permite liberar un lote vendido mediante la cancelación de un apartado. No hay cambios de esquema ni migraciones.
+
+Validación (2026-10-06): 29 pruebas de integración; recorrido local en navegador con reserva M1/L4 → cancelación → Disponible en el plano sin recarga; cita M1/L5 → Venta → cancelación → Disponible. Ambos registros QA quedan cancelados en el historial local. Verificados diálogo, teclado, tema claro/oscuro y consola sin errores. El control de viewport no aplicó el ancho móvil solicitado, por lo que esa comprobación visual queda pendiente.
+
+Publicación: desplegar la nueva versión del CRM en Easypanel (frontend y backend). La landing existente consume el catálogo actualizado y no necesita cambios para estas acciones.

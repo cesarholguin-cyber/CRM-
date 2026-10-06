@@ -9,12 +9,14 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_request_info
+from app.core.audit import write_audit_log
+from app.services.reservation_actions import lock_lot, change_sale_status, recount_project, INACTIVE
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.client import Client, ClientInteraction, ClientStatus
@@ -183,8 +185,21 @@ async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSessio
 async def list_requests(db: AsyncSession = Depends(get_db)):
     rows = (await db.execute(select(ClientInteraction).where(
         ClientInteraction.interaction_type == 'web_request').order_by(ClientInteraction.created_at.desc()))).scalars().all()
-    return [dict({k:v for k,v in metadata(row).items() if k != 'fingerprint'}, id=row.id, reference=f'WEB-{row.id}', client_id=row.client_id,
-                 message=row.notes, created_at=row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at) for row in rows]
+    sale_ids = [metadata(row).get('sale_id') for row in rows if metadata(row).get('sale_id')]
+    sales = {sale.id: sale for sale in (await db.execute(select(Sale).where(Sale.id.in_(sale_ids)))).scalars()} if sale_ids else {}
+    result = []
+    for row in rows:
+        saved = {k:v for k,v in metadata(row).items() if k != 'fingerprint'}
+        sale = sales.get(saved.get('sale_id'))
+        if sale:
+            saved['sale_status'] = sale.status.value
+            if sale.status in INACTIVE:
+                saved['status'] = 'cancelled'
+            elif sale.status == SaleStatus.PAID:
+                saved['status'] = 'sold'
+        result.append(dict(saved, id=row.id, reference=f'WEB-{row.id}', client_id=row.client_id,
+                           message=row.notes, created_at=row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at))
+    return result
 
 
 class RequestUpdate(BaseModel):
@@ -193,6 +208,9 @@ class RequestUpdate(BaseModel):
 
 @router.patch('/{request_id}')
 async def update_request(request_id: int, data: RequestUpdate, db: AsyncSession = Depends(get_db)):
+    if db.bind.dialect.name == 'sqlite':
+        await db.execute(update(ClientInteraction).where(ClientInteraction.id == request_id)
+                         .values(id=ClientInteraction.id))
     row = (await db.execute(select(ClientInteraction).where(
         ClientInteraction.id == request_id, ClientInteraction.interaction_type == 'web_request').with_for_update())).scalar_one_or_none()
     if not row:
@@ -200,7 +218,85 @@ async def update_request(request_id: int, data: RequestUpdate, db: AsyncSession 
     saved = metadata(row)
     if saved.get('kind') == 'reservation':
         raise HTTPException(409, 'Gestiona el apartado desde sus acciones de venta o cancelación.')
+    if saved.get('sale_id'):
+        raise HTTPException(409, 'Esta solicitud ya tiene una venta vinculada. Usa sus acciones para cambiar el estado.')
+    if saved.get('status') in ('cancelled', 'sold') and data.status != saved.get('status'):
+        raise HTTPException(409, 'Esta solicitud ya está cerrada.')
     saved['status'] = data.status
     row.metadata_json = json.dumps(saved, ensure_ascii=False)
     await db.commit()
     return {'success': True, 'status': data.status}
+
+
+class RequestAction(BaseModel):
+    action: Literal['sale', 'sold', 'cancel']
+
+
+@router.post('/{request_id}/actions')
+async def request_action(request_id: int, data: RequestAction, request: Request,
+                         db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    if db.bind.dialect.name == 'sqlite':
+        await db.execute(update(ClientInteraction).where(ClientInteraction.id == request_id)
+                         .values(id=ClientInteraction.id))
+    row = (await db.execute(select(ClientInteraction).where(
+        ClientInteraction.id == request_id, ClientInteraction.interaction_type == 'web_request')
+        .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+    if not row:
+        raise HTTPException(404, 'Solicitud no encontrada.')
+    saved = metadata(row)
+    if saved.get('kind') == 'reservation':
+        raise HTTPException(409, 'Gestiona este apartado desde el registro del lote.')
+    sale = None
+    lot = None
+    if saved.get('lot_id'):
+        lot = await lock_lot(db, saved['lot_id'])
+    if saved.get('sale_id'):
+        sale = (await db.execute(select(Sale).where(Sale.id == saved['sale_id']).with_for_update()
+                                .execution_options(populate_existing=True))).scalar_one_or_none()
+        if not sale or sale.client_id != row.client_id or not lot or sale.lot_id != lot.id:
+            raise HTTPException(409, 'No pudimos verificar la venta vinculada.')
+    if data.action == 'cancel':
+        if saved.get('status') == 'sold':
+            raise HTTPException(409, 'La solicitud ya corresponde a un lote vendido.')
+        if sale:
+            await change_sale_status(db, sale, lot, SaleStatus.CANCELLED)
+        # An unconverted visit never owned the inventory; cancelling it must
+        # leave another client's reservation, a sold lot or a block unchanged.
+        saved['status'] = 'cancelled'
+    else:
+        if saved.get('status') == 'cancelled' or (sale and sale.status in INACTIVE):
+            raise HTTPException(409, 'Esta solicitud está cancelada. Registra una nueva solicitud.')
+        if not lot:
+            raise HTTPException(409, 'La solicitud no tiene un lote seleccionado. Registra la venta desde Ventas.')
+        if not sale:
+            active_sale = await db.scalar(select(Sale.id).where(Sale.lot_id == lot.id, Sale.status.notin_(INACTIVE)).limit(1))
+            if lot.status != LotStatus.AVAILABLE or active_sale:
+                raise HTTPException(409, 'El lote ya no está disponible. Revisa el apartado o venta existente.')
+            price = round(lot.area_sqm * lot.price_per_sqm, 2)
+            down = min(15000, price) if saved.get('project_slug') == 'floresta-campestre' else round(price * .3, 2)
+            rate, months = .0141033227511898, 144
+            sale = Sale(client_id=row.client_id, lot_id=lot.id, agent_id=current_user.id,
+                        sale_price=price, down_payment=down, financing_amount=price-down,
+                        interest_rate=rate*1200, payment_terms_months=months,
+                        monthly_payment=round((price-down)*rate/(1-(1+rate)**-months), 2),
+                        status=SaleStatus.RESERVED, reservation_expires_at=datetime.now(timezone.utc)+timedelta(days=15),
+                        notes=f'Originada desde WEB-{row.id}. {row.notes or ""}')
+            db.add(sale)
+            lot.status = LotStatus.RESERVED
+            lot.sold_to_client_id = row.client_id
+            await db.flush()
+            saved['sale_id'] = sale.id
+            client = await db.get(Client, row.client_id)
+            client.status = ClientStatus.RESERVATION
+            await recount_project(db, lot.project_id)
+        if data.action == 'sold':
+            await change_sale_status(db, sale, lot, SaleStatus.PAID)
+            saved['status'] = 'sold'
+        else:
+            saved['status'] = 'sold' if sale.status == SaleStatus.PAID else 'sale'
+    row.metadata_json = json.dumps(saved, ensure_ascii=False)
+    await db.commit()
+    write_audit_log(current_user.id, current_user.email, 'WEB_REQUEST_ACTION', 'client_interaction', row.id,
+                    new_values={'action': data.action, 'sale_id': saved.get('sale_id')}, **get_request_info(request))
+    return {'success': True, 'status': saved['status'], 'sale_id': saved.get('sale_id'),
+            'lot_status': lot.status.value if lot else None}

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { webRequestsApi } from '../lib/api';
-import { CalendarDays, MessageSquare, RefreshCw } from 'lucide-react';
+import ReservationActions from '../components/ReservationActions';
+import { CalendarDays, MessageSquare, RefreshCw, ChevronDown } from 'lucide-react';
 
-const states = { pending: 'Pendiente', contacted: 'Contactado', confirmed: 'Cita confirmada', completed: 'Atendido', cancelled: 'Cancelado' };
-export default function WebsiteRequests() {
+const states = { pending: 'Pendiente', contacted: 'Contactado', confirmed: 'Cita confirmada', completed: 'Atendido', cancelled: 'Cancelado', sale: 'Venta en gestión', sold: 'Vendido' };
+export default function WebsiteRequests({ revision = 0, onChanged = () => {} }) {
   const [rows, setRows] = useState([]);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('active');
@@ -12,14 +13,14 @@ export default function WebsiteRequests() {
     try { const res = await webRequestsApi.list(); setRows(res.data.filter(r => r.kind !== 'reservation')); setError(''); }
     catch { setError('No pudimos cargar las citas. Reintenta para ver las solicitudes más recientes.'); }
   }
-  useEffect(() => { load(); const timer = setInterval(() => { if (!document.hidden) load(); }, 15000); return () => clearInterval(timer); }, []);
+  useEffect(() => { load(); const timer = setInterval(() => { if (!document.hidden) load(); }, 15000); return () => clearInterval(timer); }, [revision]);
   async function update(row, status) {
     setBusy(row.id);
     try { await webRequestsApi.update(row.id, status); await load(); }
     catch { setError('No se pudo guardar el cambio. Intenta de nuevo.'); }
     finally { setBusy(null); }
   }
-  const visible = rows.filter(r => filter === 'all' || !['completed', 'cancelled'].includes(r.status));
+  const visible = rows.filter(r => filter === 'all' || !['completed', 'cancelled', 'sold'].includes(r.status));
   return <section className="mb-8" aria-label="Citas y consultas desde la web">
     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div><h2 className="text-xl font-semibold text-rf-dark dark:text-gray-100">Citas y consultas <span className="text-sm text-gray-500">({visible.length})</span></h2><p className="text-sm text-gray-500">Solicitudes de la web. Pedir una visita no bloquea el lote.</p></div>
@@ -27,7 +28,8 @@ export default function WebsiteRequests() {
     </div>
     {error && <p role="alert" className="mb-3 text-red-600">{error}</p>}
     {!visible.length && !error && <div className="card p-6 text-gray-500">Las solicitudes de cita y consulta aparecerán aquí automáticamente.</div>}
-    <div className="grid gap-3">{visible.map(row => <article key={row.id} className="card web-request-card p-5">
+    <div className="grid gap-3">{visible.map(row => <details key={row.id} className="card web-request-card reservation-record">
+      <summary aria-label={`Abrir solicitud ${row.reference}`}><span className="reservation-record-icon">{row.kind === 'visit' ? <CalendarDays size={20}/> : <MessageSquare size={20}/>}</span><span className="reservation-record-title"><strong>{row.full_name}</strong><span>{row.project_name}{row.block && ` · Manzana ${row.block.replace(/^M/, '')} · Lote ${row.lot_number}`}</span><small>{row.kind === 'visit' ? 'Cita' : 'Consulta'} · {row.reference}</small></span><span className={`reservation-state ${row.status}`}>{states[row.status] || row.status}</span><ChevronDown size={18} className="reservation-chevron"/></summary><div className="reservation-record-body">
       <div className="flex flex-wrap justify-between gap-4">
         <div className="min-w-0"><div className="flex items-center gap-2 text-rf-green-800 dark:text-rf-green-400">{row.kind === 'visit' ? <CalendarDays size={19}/> : <MessageSquare size={19}/>}<strong>{row.kind === 'visit' ? 'Solicitud de cita' : 'Consulta'} · {row.reference}</strong></div>
           <h3 className="mt-2 font-semibold text-rf-dark dark:text-gray-100">{row.full_name}</h3>
@@ -37,8 +39,10 @@ export default function WebsiteRequests() {
           {row.message && <p className="mt-2 text-sm whitespace-pre-wrap break-words">{row.message}</p>}
           <p className="text-xs text-gray-400 mt-2">Recibido: {new Date(row.created_at).toLocaleString('es-MX')}</p>
         </div>
-        <label className="text-sm">Seguimiento<select className="input mt-1" aria-label={`Estado de ${row.reference}`} disabled={busy === row.id} value={row.status} onChange={e=>update(row,e.target.value)}>{Object.entries(states).filter(([s])=>row.kind==='visit'||s!=='confirmed').map(([s,label])=><option key={s} value={s}>{label}</option>)}</select></label>
+        {!row.sale_id && !['cancelled','sold'].includes(row.status) && <label className="text-sm">Seguimiento<select className="input mt-1" aria-label={`Estado de ${row.reference}`} disabled={busy === row.id} value={row.status} onChange={e=>update(row,e.target.value)}>{Object.entries(states).filter(([s])=>!['sale','sold','cancelled'].includes(s) && (row.kind==='visit'||s!=='confirmed')).map(([s,label])=><option key={s} value={s}>{label}</option>)}</select></label>}
       </div>
-    </article>)}</div>
+      <ReservationActions requestId={row.id} saleId={row.sale_id} hasLot={!!row.lot_id} closed={['cancelled','sold'].includes(row.status)} title={`${row.reference} · ${row.full_name} · ${row.project_name}${row.block ? ` · Manzana ${row.block.replace(/^M/, '')} · Lote ${row.lot_number}` : ''}`} onChanged={message => { load(); onChanged(message); }}/>
+      </div>
+    </details>)}</div>
   </section>;
 }

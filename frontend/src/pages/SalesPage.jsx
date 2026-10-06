@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { salesApi, clientsApi, lotsApi, projectsApi } from '../lib/api';
 import { ShoppingCart, Plus, TrendingUp, DollarSign, Calendar, LayoutGrid, List, ChevronDown, X } from 'lucide-react';
 
@@ -23,6 +24,8 @@ const stageGradients = {
 };
 
 export default function SalesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedSaleId = searchParams.get('sale_id');
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list');
@@ -101,8 +104,9 @@ export default function SalesPage() {
     setShowModal(true);
   };
 
-  const findClientName = (id) => clients.find((c) => c.id === id)?.full_name || `Cliente #${id}`;
-  const getSalesByStatus = (status) => sales.filter((s) => s.status === status);
+  const findClientName = (id) => clients.find((c) => c.id === id)?.full_name?.replace(/^dec::/, '') || `Cliente #${id}`;
+  const visibleSales = selectedSaleId ? sales.filter(s => String(s.id) === selectedSaleId) : sales;
+  const getSalesByStatus = (status) => visibleSales.filter((s) => s.status === status);
 
   return (
     <div className="animate-fade-in max-w-7xl mx-auto">
@@ -115,7 +119,7 @@ export default function SalesPage() {
               <h1 className="text-3xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Ventas</h1>
             </div>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200/60 animate-scale-in stagger-3">
-              {sales.length}
+              {visibleSales.length}
             </span>
           </div>
           <p className="text-sm text-rf-gray-light dark:text-gray-500 ml-3.5">Gestiona apartados, contratos y financiamiento</p>
@@ -125,6 +129,7 @@ export default function SalesPage() {
         </button>
       </div>
 
+      {selectedSaleId && <div className="reservation-notice flex items-center justify-between gap-3"><span>Registro de venta #{selectedSaleId}</span><button className="btn-secondary" onClick={() => setSearchParams({})}>Ver todas las ventas</button></div>}
       {/* Filter Bar + View Toggle */}
       <div className="glass-panel rounded-2xl p-3 shadow-premium-sm mb-6 flex flex-wrap gap-2 items-center animate-slide-up stagger-1 border border-black/[0.03] dark:border-white/[0.05]">
         <div className="flex gap-1 flex-wrap flex-1">
@@ -168,7 +173,7 @@ export default function SalesPage() {
             <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-rf-green-800 border-r-rf-green-400 animate-spin" />
           </div>
         </div>
-      ) : sales.length === 0 ? (
+      ) : visibleSales.length === 0 ? (
         /* Empty State */
         <div className="card p-16 text-center animate-scale-in">
           <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200/50 dark:border-amber-800/50 flex items-center justify-center">
@@ -228,7 +233,7 @@ export default function SalesPage() {
       ) : (
         /* List View */
         <div className="space-y-2">
-          {sales.map((sale, i) => {
+          {visibleSales.map((sale, i) => {
             const cfg = statusConfig[sale.status] || statusConfig.reserved;
             return (
               <div

@@ -113,4 +113,5 @@ export const dashboardApi = {
 export const webRequestsApi = {
   list: () => api.get('/web-requests'),
   update: (id, status) => api.patch(`/web-requests/${id}`, { status }),
+  action: (id, action) => api.post(`/web-requests/${id}/actions`, { action }),
 };

@@ -36,7 +36,7 @@ class Lot(Base):
 
     # Relationships
     project = relationship("Project", back_populates="lots")
-    sale = relationship("Sale", back_populates="lot", uselist=False)
+    sales = relationship("Sale", back_populates="lot")
 
     @property
     def display_name(self) -> str:

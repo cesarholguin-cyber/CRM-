@@ -78,6 +78,8 @@ async def public_reserve(
     data: ReserveRequest,
     db: AsyncSession = Depends(get_db),
 ):
+    if not data.email and not data.phone:
+        raise HTTPException(422, 'Se necesita correo o teléfono.')
     # 1. Find or create the project
     result = await db.execute(select(Project).where(Project.slug == data.project_slug))
     project = result.scalar_one_or_none()
@@ -95,7 +97,7 @@ async def public_reserve(
     # 2. Find the lot by id or by lot_number
     lot = None
     if data.lot_id and data.lot_id > 0:
-        result = await db.execute(select(Lot).where(Lot.id == data.lot_id))
+        result = await db.execute(select(Lot).where(Lot.id == data.lot_id, Lot.project_id == project.id).with_for_update())
         lot = result.scalar_one_or_none()
 
     if not lot and data.lot_number:
@@ -103,8 +105,9 @@ async def public_reserve(
             select(Lot).where(
                 Lot.project_id == project.id,
                 Lot.lot_number == data.lot_number,
+                Lot.block.is_(None),
             )
-        )
+        .with_for_update())
         lot = result.scalar_one_or_none()
 
     # 3. Lot must already exist (pre-seeded by admin)
@@ -122,9 +125,9 @@ async def public_reserve(
 
     # 2. Find or create client
     result = await db.execute(
-        select(Client).where(Client._email == data.email)
+        select(Client).where(Client._email == 'dec::' + data.email) if data.email else select(Client).where(Client._phone == 'dec::' + (data.phone or ''))
     )
-    client = result.scalar_one_or_none()
+    client = result.scalars().first()
 
     if not client:
         client = Client(

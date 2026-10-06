@@ -1,5 +1,5 @@
-from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional
 from app.models.sale import SaleStatus
 
@@ -31,6 +31,11 @@ class SaleUpdate(BaseModel):
 
 
 class SaleResponse(BaseModel):
+    @field_validator('created_at', 'updated_at', 'reservation_expires_at', mode='before')
+    @classmethod
+    def utc_dates(cls, value):
+        return value.replace(tzinfo=timezone.utc) if isinstance(value, datetime) and value.tzinfo is None else value
+
     id: int
     client_id: int
     lot_id: int

@@ -1,8 +1,9 @@
+import EnvironmentNotice from './components/EnvironmentNotice';
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import { ThemeProvider } from './lib/theme';
-import { salesApi } from './lib/api';
+import { salesApi, webRequestsApi } from './lib/api';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ProjectsPage from './pages/ProjectsPage';
@@ -42,8 +43,8 @@ function useApartadosPolling() {
 
     const check = async () => {
       try {
-        const res = await salesApi.list({ status: 'reserved' });
-        const reserved = res.data || [];
+        const [res, requests] = await Promise.all([salesApi.list({ status: 'reserved' }), webRequestsApi.list()]);
+        const reserved = [...(res.data || []).map(s=>({id:'sale-'+s.id})), ...(requests.data || []).filter(r=>r.kind!=='reservation').map(r=>({id:'web-'+r.id}))];
         const currentIds = new Set(reserved.map((s) => s.id));
 
         if (isFirstRun.current) {
@@ -112,6 +113,7 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
+          <EnvironmentNotice />
           <AppRoutes />
         </AuthProvider>
       </ThemeProvider>

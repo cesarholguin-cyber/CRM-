@@ -15,6 +15,7 @@ from app.models.user import UserRole
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
+@router.get("", include_in_schema=False, response_model=list[ProjectResponse])
 @router.get("/", response_model=list[ProjectResponse])
 async def list_projects(
     db: AsyncSession = Depends(get_db),
@@ -37,6 +38,7 @@ async def get_project(
     return ProjectResponse.model_validate(project)
 
 
+@router.post("", include_in_schema=False, response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
     project_data: ProjectCreate,

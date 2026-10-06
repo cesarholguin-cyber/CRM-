@@ -31,7 +31,7 @@ COPY backend/ ./backend/
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Create non-root user
-RUN adduser --disabled-password --gecos '' appuser
+RUN adduser --disabled-password --gecos '' appuser && mkdir -p /app/backend/data && chown appuser:appuser /app/backend/data
 USER appuser
 
 EXPOSE 80

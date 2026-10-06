@@ -12,6 +12,7 @@ from app.api.deps import get_current_user, get_current_admin, get_request_info
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
+@router.post("", include_in_schema=False, response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
@@ -46,6 +47,7 @@ async def create_user(
     return UserResponse.model_validate(user)
 
 
+@router.get("", include_in_schema=False, response_model=list[UserResponse])
 @router.get("/", response_model=list[UserResponse])
 async def list_users(
     db: AsyncSession = Depends(get_db),

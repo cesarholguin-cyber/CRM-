@@ -6,7 +6,7 @@ from app.core.database import Base
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
     user_id = Column(Integer, nullable=True)
     username = Column(String(100), nullable=True)

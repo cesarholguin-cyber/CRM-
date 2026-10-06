@@ -30,6 +30,7 @@ async def _get_lot(lot_id: int, project_id: int, db: AsyncSession) -> Lot:
     return lot
 
 
+@router.get("", include_in_schema=False, response_model=list[LotResponse])
 @router.get("/", response_model=list[LotResponse])
 async def list_lots(
     project_id: int,
@@ -64,6 +65,7 @@ async def get_lot(
     return LotResponse.model_validate(lot)
 
 
+@router.post("", include_in_schema=False, response_model=LotResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=LotResponse, status_code=status.HTTP_201_CREATED)
 async def create_lot(
     project_id: int,
@@ -76,7 +78,7 @@ async def create_lot(
 
     # Check duplicate lot number
     result = await db.execute(
-        select(Lot).where(Lot.project_id == project_id, Lot.lot_number == lot_data.lot_number)
+        select(Lot).where(Lot.project_id == project_id, Lot.lot_number == lot_data.lot_number, Lot.block == lot_data.block)
     )
     if result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Lot number already exists in this project")

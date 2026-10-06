@@ -109,3 +109,8 @@ export const dashboardApi = {
   stats: () => api.get('/dashboard/stats'),
   pipeline: () => api.get('/dashboard/pipeline'),
 };
+
+export const webRequestsApi = {
+  list: () => api.get('/web-requests'),
+  update: (id, status) => api.patch(`/web-requests/${id}`, { status }),
+};

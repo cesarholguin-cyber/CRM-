@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, Boolean, Text, DateTime, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, Integer, String, Float, Boolean, Text, DateTime, ForeignKey, Enum as SAEnum, Index, text
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 import enum
@@ -17,10 +17,13 @@ class SaleStatus(str, enum.Enum):
 
 class Sale(Base):
     __tablename__ = "sales"
+    __table_args__ = (Index("uq_sales_active_lot", "lot_id", unique=True,
+        postgresql_where=text("status NOT IN ('CANCELLED', 'REVERSED')"),
+        sqlite_where=text("status NOT IN ('CANCELLED', 'REVERSED')")),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False, index=True)
-    lot_id = Column(Integer, ForeignKey("lots.id"), nullable=False, unique=True, index=True)
+    lot_id = Column(Integer, ForeignKey("lots.id"), nullable=False, index=True)
     agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     # Sale details
@@ -47,7 +50,7 @@ class Sale(Base):
 
     # Relationships
     client = relationship("Client", back_populates="sales")
-    lot = relationship("Lot", back_populates="sale")
+    lot = relationship("Lot", back_populates="sales")
     agent = relationship("User", back_populates="sales")
     payment_plans = relationship("PaymentPlan", back_populates="sale", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="sale", cascade="all, delete-orphan")

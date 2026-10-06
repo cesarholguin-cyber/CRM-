@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 import os
+import secrets
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -8,6 +10,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     DEBUG: bool = False
 
+    DATABASE_MODE: str = "embedded"
     # Database — Render provides DATABASE_URL in sync format; we auto-convert
     DATABASE_URL: str = ""
     DATABASE_URL_SYNC: str = ""
@@ -50,9 +53,22 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if self.DATABASE_MODE == "embedded":
+            directory = Path(__file__).resolve().parents[2] / "data"
+            directory.mkdir(parents=True, exist_ok=True)
+            if self.SECRET_KEY == "change-me-in-production":
+                key_file = directory / ".session-key"
+                if not key_file.exists():
+                    key_file.write_text(secrets.token_urlsafe(48))
+                    key_file.chmod(0o600)
+                self.SECRET_KEY = key_file.read_text().strip()
+            database = directory / "crm-pruebas.db"
+            self.DATABASE_URL = "sqlite+aiosqlite:///" + str(database)
+            self.DATABASE_URL_SYNC = "sqlite:///" + str(database)
         # Auto-convert URLs to use psycopg driver for Supabase pgbouncer compatibility
         if self.DATABASE_URL:
             # Replace any driver with psycopg

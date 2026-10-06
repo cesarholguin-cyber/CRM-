@@ -19,3 +19,7 @@ render.yaml
 build.sh
 *.md
 !frontend/README.md
+
+.venv*
+backend/data
+ACCESO-CRM-PRUEBAS.txt

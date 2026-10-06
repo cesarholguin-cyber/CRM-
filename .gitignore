@@ -9,3 +9,8 @@ node_modules/
 .DS_Store
 .vite/
 *.log
+.venv*/
+.pytest_cache/
+
+ACCESO-CRM-PRUEBAS.txt
+backend/data/

@@ -19,11 +19,13 @@ from app.api.deps import get_current_user, get_current_admin, get_request_info
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
 
+@router.get("", include_in_schema=False, response_model=list[SaleResponse])
 @router.get("/", response_model=list[SaleResponse])
 async def list_sales(
     status: str | None = None,
     agent_id: int | None = None,
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     query = select(Sale).order_by(Sale.created_at.desc())
 
@@ -45,6 +47,7 @@ async def list_sales(
 async def get_sale(
     sale_id: int,
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     result = await db.execute(select(Sale).where(Sale.id == sale_id))
     sale = result.scalar_one_or_none()
@@ -53,6 +56,7 @@ async def get_sale(
     return SaleResponse.model_validate(sale)
 
 
+@router.post("", include_in_schema=False, response_model=SaleResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=SaleResponse, status_code=status.HTTP_201_CREATED)
 async def create_sale(
     sale_data: SaleCreate,
@@ -61,7 +65,7 @@ async def create_sale(
     current_user = Depends(get_current_user),
 ):
     # Verify lot
-    result = await db.execute(select(Lot).where(Lot.id == sale_data.lot_id))
+    result = await db.execute(select(Lot).where(Lot.id == sale_data.lot_id).with_for_update())
     lot = result.scalar_one_or_none()
     if not lot:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lot not found")

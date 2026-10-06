@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import WebsiteRequests from './WebsiteRequests';
 import { salesApi, clientsApi, lotsApi, projectsApi } from '../lib/api';
 import { Bookmark, Search, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
@@ -15,15 +16,16 @@ export default function ApartadosPage() {
   const [lots, setLots] = useState([]);
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
 
   const loadData = () => {
-    setLoading(true);
     Promise.all([
       salesApi.list({ status: 'reserved' }),
       clientsApi.list(),
       projectsApi.list(),
     ]).then(([salesRes, clientsRes, projectsRes]) => {
+      setError('');
       setReservations(salesRes.data || []);
       setClients(clientsRes.data || []);
       setProjects(projectsRes.data || []);
@@ -37,11 +39,11 @@ export default function ApartadosPage() {
         (ld.lots || []).forEach((l) => { allLots[l.id] = l; });
       });
       setLots(allLots);
-    }).catch(console.error)
+    }).catch(() => setError('No pudimos cargar los apartados. Actualiza para reintentar.'))
     .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); const timer = setInterval(() => { if (!document.hidden) loadData(); }, 15000); return () => clearInterval(timer); }, []);
 
   const findClientName = (id) => {
     const c = clients.find((cl) => cl.id === id);
@@ -103,7 +105,7 @@ export default function ApartadosPage() {
     const name = findClientName(g.clientId).toLowerCase();
     const lotNums = g.sales.map((s) => {
       const l = findLot(s.lot_id);
-      return l ? `lote ${l.lot_number}` : '';
+      return l ? `${l.block || ""} lote ${l.lot_number}` : '';
     }).join(' ');
     return name.includes(q) || lotNums.includes(q);
   });
@@ -119,10 +121,13 @@ export default function ApartadosPage() {
               {Object.keys(grouped).length} clientes · {reservations.length} lotes
             </span>
           </div>
-          <p className="text-base text-rf-gray-light dark:text-gray-500 mt-1 ml-4">Reservaciones de lotes desde la web</p>
+          <p className="text-base text-rf-gray-light dark:text-gray-500 mt-1 ml-4">Apartados, citas y consultas recibidas desde la web</p>
         </div>
       </div>
 
+      <WebsiteRequests />
+      <h2 className="text-xl font-semibold mb-4 text-rf-dark dark:text-gray-100">Lotes apartados</h2>
+      {error && <p role="alert" className="text-red-600 mb-3">{error} <button onClick={loadData}>Reintentar</button></p>}
       <div className="card p-4 mb-6 shadow-premium-xs stagger-2 animate-fade-in ring-1 ring-gray-100/60 dark:ring-gray-800/60">
         <div className="relative max-w-md">
           <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -162,7 +167,7 @@ export default function ApartadosPage() {
             const days = daysRemaining(group.earliestExpiry?.toISOString());
             const cfg = statusConfig.reserved;
             const lotInfos = group.sales.map((s) => findLot(s.lot_id)).filter(Boolean);
-            const lotNumbers = lotInfos.map((l) => l.lot_number);
+            const lotNumbers = lotInfos.map((l) => `${l.block ? l.block + ' · ' : ''}${l.lot_number}`);
             const totalArea = lotInfos.reduce((sum, l) => sum + (l.area_sqm || 0), 0);
             const projectName = lotInfos.length > 0 ? findProjectName(lotInfos[0].project_id) : '';
 

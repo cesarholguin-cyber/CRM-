@@ -15,6 +15,7 @@ from app.api.deps import get_current_user, get_current_admin, get_request_info
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
 
+@router.get("", include_in_schema=False, response_model=list[ClientResponse])
 @router.get("/", response_model=list[ClientResponse])
 async def list_clients(
     search: str | None = Query(None),
@@ -22,6 +23,7 @@ async def list_clients(
     agent_id: int | None = Query(None),
     project_id: int | None = Query(None),
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     query = select(Client).order_by(Client.created_at.desc())
 
@@ -54,6 +56,7 @@ async def list_clients(
 async def get_client(
     client_id: int,
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
     result = await db.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
@@ -63,6 +66,7 @@ async def get_client(
     return ClientResponse.model_validate(client)
 
 
+@router.post("", include_in_schema=False, response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 async def create_client(
     client_data: ClientCreate,

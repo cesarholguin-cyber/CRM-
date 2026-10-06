@@ -95,6 +95,7 @@ export default function LotsPage() {
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-rf-green-400/40 to-transparent" />
         <div className="flex flex-wrap gap-4 items-center">
           <select
+            aria-label="Proyecto del inventario"
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
             className="input w-auto min-w-[200px]"
@@ -109,6 +110,7 @@ export default function LotsPage() {
             {filters.map((f) => (
               <button
                 key={f.key}
+                aria-pressed={filter === f.key}
                 onClick={() => setFilter(f.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all duration-150 ${
                   filter === f.key
@@ -174,14 +176,15 @@ export default function LotsPage() {
               return (
                 <div
                   key={lot.id}
-                  className="card p-3.5 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-                  style={{ animation: `slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both`, animationDelay: `${i * 30}ms` }}
+                  data-status={lot.status}
+                  className="card lot-tile p-3.5 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                  style={{ animation: `slide-up 0.5s cubic-bezier(0.16,1,0.3,1) both`, animationDelay: `${Math.min(i, 12) * 25}ms` }}
                 >
                   <div className="flex items-center justify-between mb-2.5">
                     <span className="text-sm font-bold text-rf-dark dark:text-gray-100">#{lot.lot_number}</span>
                     {lot.block && (
                       <span className="text-[10px] font-semibold tracking-wide uppercase text-rf-green-700 dark:text-rf-green-400 bg-rf-green-50/80 dark:bg-rf-green-900/20 px-2 py-0.5 rounded-md border border-rf-green-200/60 dark:border-rf-green-800/40">
-                        MZ {lot.block}
+                        MZ {lot.block.replace(/^M/, '')}
                       </span>
                     )}
                   </div>
@@ -190,6 +193,7 @@ export default function LotsPage() {
                     ${(lot.total_price || lot.area_sqm * (lot.price_per_sqm || 0)).toLocaleString('es-MX')}
                   </p>
                   <select
+                    aria-label={`Estado de manzana ${lot.block?.replace(/^M/, '') || 'sin asignar'}, lote ${lot.lot_number}`}
                     value={lot.status}
                     onChange={(e) => handleStatusChange(lot.id, e.target.value)}
                     className={`w-full text-xs rounded-lg px-2.5 py-1.5 border font-medium transition-all focus:outline-none focus:ring-2 focus:ring-rf-green-500/20 ${cfg.chip}`}

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 import { dashboardApi } from '../lib/api';
-import { Building2, Map, Users, ShoppingCart, TrendingUp, DollarSign, Layers, Target, Bookmark } from 'lucide-react';
+import { Building2, Map, Users, ShoppingCart, TrendingUp, DollarSign, Layers, Target, Bookmark, ArrowUpRight, ArrowRight, Leaf } from 'lucide-react';
 
 const ICON_COLORS = [
   { bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 ring-1 ring-emerald-200/30', text: 'text-emerald-700 dark:text-emerald-300', accent: 'from-emerald-500 to-emerald-400' },
@@ -15,6 +17,7 @@ const ICON_COLORS = [
 ];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,27 +55,24 @@ export default function DashboardPage() {
 
   return (
     <div className="page-enter">
-      {/* Header */}
-      <div className="mb-8 animate-fade-in">
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col items-center justify-center gap-1">
-            <div className="w-1 h-8 rounded-full bg-gradient-to-b from-rf-green-800 to-rf-green-400 dark:from-rf-green-400 dark:to-rf-green-700 opacity-80" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-rf-dark dark:text-gray-100 tracking-tight">Dashboard</h1>
-            <p className="text-sm text-rf-gray-light dark:text-gray-500 mt-0.5">Resumen general de tu operación</p>
-          </div>
+      <section className="crm-hero" aria-label="Resumen de la operación">
+        <div><p className="crm-eyebrow"><Leaf size={13}/> TU VISIÓN. EL SIGUIENTE PASO.</p>
+          <h1>Todo listo para <em>seguir creciendo.</em></h1>
+          <p>Hola, {user?.full_name?.split(' ')[0] || 'bienvenido'}. Aquí tienes el panorama de tus desarrollos y los accesos a tu próxima gestión.</p>
         </div>
-      </div>
+        <div className="crm-hero-actions"><Link to="/apartados">Revisar apartados <ArrowUpRight size={16}/></Link><Link to="/lots">Explorar inventario <ArrowRight size={16}/></Link></div>
+      </section>
+      <div className="crm-section-title"><h2>Tu operación de un vistazo</h2><span>Resumen general</span></div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
+      <div className="crm-stat-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5 mb-8">
         {cards.map((card, i) => {
           const color = ICON_COLORS[i % ICON_COLORS.length];
           return (
-            <div
+            <Link
+              to={['/projects', '/lots', '/lots', '/apartados', '/clients', '/sales', '/sales', '/reports', '/settings'][i]}
               key={card.label}
-              className={`stagger-${i + 1} animate-fade-slide-up card overflow-hidden hover:shadow-premium-md hover:border-gray-200 dark:hover:border-gray-600/50 transition-all duration-300`}
+              className={`crm-stat stagger-${i + 1} animate-fade-slide-up card overflow-hidden hover:shadow-premium-md hover:border-gray-200 dark:hover:border-gray-600/50 transition-all duration-300`}
             >
               <div className={`h-[2px] bg-gradient-to-r ${color.accent} opacity-60`} />
               <div className="p-5 pt-4">
@@ -87,7 +87,8 @@ export default function DashboardPage() {
                   <p className="text-2xl font-semibold text-rf-dark dark:text-gray-100 tracking-tight">{card.value}</p>
                 </div>
               </div>
-            </div>
+              <ArrowUpRight size={16} className="crm-stat-arrow"/>
+            </Link>
           );
         })}
       </div>

@@ -37,7 +37,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex">
+    <div className="crm-login relative min-h-screen flex">
       {/* Left side - Login Form */}
       <div className="relative w-full lg:w-1/2 flex flex-col items-center justify-center bg-gradient-to-br from-rf-green-900 via-rf-green-800 to-rf-green-900 p-6 sm:p-8 lg:p-12 overflow-hidden">
         {/* Subtle grid overlay */}
@@ -119,6 +119,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

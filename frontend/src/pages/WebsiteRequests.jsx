@@ -27,7 +27,7 @@ export default function WebsiteRequests() {
     </div>
     {error && <p role="alert" className="mb-3 text-red-600">{error}</p>}
     {!visible.length && !error && <div className="card p-6 text-gray-500">Las solicitudes de cita y consulta aparecerán aquí automáticamente.</div>}
-    <div className="grid gap-3">{visible.map(row => <article key={row.id} className="card p-5">
+    <div className="grid gap-3">{visible.map(row => <article key={row.id} className="card web-request-card p-5">
       <div className="flex flex-wrap justify-between gap-4">
         <div className="min-w-0"><div className="flex items-center gap-2 text-rf-green-800 dark:text-rf-green-400">{row.kind === 'visit' ? <CalendarDays size={19}/> : <MessageSquare size={19}/>}<strong>{row.kind === 'visit' ? 'Solicitud de cita' : 'Consulta'} · {row.reference}</strong></div>
           <h3 className="mt-2 font-semibold text-rf-dark dark:text-gray-100">{row.full_name}</h3>

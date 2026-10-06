@@ -105,7 +105,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
 cors_origins = settings.cors_origins_list
-for origin in ("http://127.0.0.1:4173", "http://localhost:4173", "http://127.0.0.1:4175"):
+for origin in ("http://127.0.0.1:4173", "http://localhost:4173", "http://127.0.0.1:4175", "https://rf-campestre-aztrotech.cesarholguin.chatgpt.site"):
     if origin not in cors_origins:
         cors_origins.append(origin)
 # Always include the Netlify frontend

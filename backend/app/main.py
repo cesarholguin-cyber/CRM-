@@ -80,12 +80,18 @@ async def lifespan(app: FastAPI):
         else:
             logger.info("Users already exist, skipping seed")
 
+    # Fail closed on conflicts; never seed a second copy of the plan.
+    from app.services.project_consolidation import consolidate_projects
+    consolidation = await consolidate_projects()
+    if consolidation['migrated']:
+        logger.info("Project consolidation completed: %s", consolidation)
+
     # Add the supplied 358-lot catalog without replacing existing inventory.
     from app.services.catalog import seed
     try:
         await seed(apply=True)
     except RuntimeError as exc:
-        logger.error("Floresta catalog requires reconciliation: %s", exc)
+        logger.error("Campestre catalog requires reconciliation: %s", exc)
 
     yield
     # Shutdown

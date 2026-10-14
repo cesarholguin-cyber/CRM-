@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 
 from app.core.database import get_db
 from app.models.lot import Lot, LotStatus
-from app.models.project import Project, ProjectStatus
+from app.services.project_identity import resolve_public_project
 from app.models.client import Client, ClientStatus
 from app.models.sale import Sale, SaleStatus
 
@@ -80,19 +80,10 @@ async def public_reserve(
 ):
     if not data.email and not data.phone:
         raise HTTPException(422, 'Se necesita correo o teléfono.')
-    # 1. Find or create the project
-    result = await db.execute(select(Project).where(Project.slug == data.project_slug))
-    project = result.scalar_one_or_none()
+    # Legacy landing requests resolve to the same inventory after consolidation.
+    project = await resolve_public_project(db, data.project_slug)
     if not project:
-        project = Project(
-            name="Floresta Campestre",
-            slug=data.project_slug,
-            description="Desarrollo residencial campestre",
-            price_per_sqm=1000.0,
-            status=ProjectStatus.ACTIVE,
-        )
-        db.add(project)
-        await db.flush()
+        raise HTTPException(503, 'Este desarrollo todavía no recibe solicitudes en línea.')
 
     # 2. Find the lot by id or by lot_number
     lot = None
@@ -136,7 +127,8 @@ async def public_reserve(
             phone=data.phone,
             status=ClientStatus.RESERVATION,
             lead_source="website",
-            notes="Apartado desde la página web (Floresta Campestre)",
+            notes=f"Apartado desde la página web ({project.name})",
+            project_id=project.id,
         )
         db.add(client)
         await db.flush()

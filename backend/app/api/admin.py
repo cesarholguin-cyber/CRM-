@@ -9,6 +9,7 @@ from app.models.lot import Lot, LotStatus
 from app.models.sale import Sale, SaleStatus, PaymentPlan, Payment
 from app.models.client import Client, ClientInteraction
 from app.models.project import Project, ProjectStatus
+from app.services.project_identity import TARGET_NAME, TARGET_SLUG
 from app.api.deps import get_current_admin
 
 logger = logging.getLogger(__name__)
@@ -90,12 +91,12 @@ async def reset_lots(
 
         await db.flush()
 
-        result = await db.execute(select(Project).where(Project.slug == "floresta-campestre"))
+        result = await db.execute(select(Project).where(Project.slug == TARGET_SLUG))
         project = result.scalar_one_or_none()
         if not project:
             project = Project(
-                name="Floresta Campestre",
-                slug="floresta-campestre",
+                name=TARGET_NAME,
+                slug=TARGET_SLUG,
                 description="Desarrollo residencial campestre",
                 price_per_sqm=DEFAULT_PRICE_PER_SQM,
                 status=ProjectStatus.ACTIVE,

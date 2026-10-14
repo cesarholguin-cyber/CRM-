@@ -56,3 +56,42 @@ El expediente muestra `reservation_expires_at` y días restantes para apartados.
 Despliegue: actualizar frontend y backend desde `master` en Easypanel. Es indispensable conservar el volumen existente en `/app/backend/data`: contiene SQLite, sus archivos y la clave de sesión. Los documentos persisten con la base, por lo que las copias de seguridad deben incluirla. Un despliegue sin ese volumen puede reiniciar la base temporal y perder los expedientes.
 
 Validación: 38 pruebas de integración, incluidas persistencia de archivos, acceso autenticado, separación entre clientes/ventas, descarga exacta, conservación tras cancelación, cargas múltiples, lotes inválidos sin escrituras parciales, límites y nombres de archivo. Compilación del frontend y revisión local con datos ficticios: carga desde Ventas → consulta desde Clientes, respuesta de descarga 200, diálogo por teclado, tema claro/oscuro y formulario móvil de 390 px sin desbordamiento horizontal. El navegador integrado no notificó el evento de descarga, aunque el servidor entregó el archivo y las pruebas comprobaron sus bytes.
+
+
+## Consolidación en Campestre del Triunfo
+
+Al arrancar esta versión, el CRM traslada el inventario y los clientes de
+`floresta-campestre` al proyecto existente `campestre-el-triunfo`, con el nombre
+visible **Campestre del Triunfo**. Conserva IDs de lotes, manzanas, superficies,
+precios, estados, ventas, pagos, expedientes y referencias de archivos en OCI.
+Actualiza el nombre del proyecto en las solicitudes web, sin cambiar sus
+identificadores ni sus huellas de reintento. Después elimina el proyecto de
+origen ya vacío. Si no existe destino, renombra el proyecto de origen conservando
+su ID. Las propiedades originales quedan registradas en auditoría.
+
+La operación es transaccional e idempotente: si encuentra una combinación
+manzana/lote duplicada, detiene el arranque sin aplicar cambios. No usa la ruta
+normal de eliminación de proyectos, que tiene borrado en cascada. Antes de
+modificar una base SQLite existente crea una copia íntegra con permisos privados
+en `backend/data/backups/before-triunfo-*.db`; si falla el respaldo, no migra.
+El importador inicial ya no vuelve a crear Floresta. La URL pública antigua del
+catálogo y las solicitudes de la landing siguen funcionando como alias del
+inventario de Triunfo, incluyendo las condiciones de apartado del plano.
+
+### Aplicación en Easypanel
+
+1. Mantener la rama `master` y la base actual. Antes de desplegar, comprobar que
+   `/app/backend/data` está en un volumen persistente y respaldar la base del
+   contenedor actual. Si todavía no hay volumen, extraer primero los datos del
+   contenedor y restaurarlos en el volumen; montar uno vacío ocultaría la base.
+2. Desplegar el commit de consolidación. La migración corre antes de admitir
+   solicitudes y registra `Project consolidation completed` con los conteos.
+3. Comprobar Proyectos: sólo Campestre del Triunfo para este catálogo, con los
+   mismos lotes y estados previos. Revisar Apartados, Ventas, Clientes y sus
+   expedientes. Comparar ambos catálogos públicos: deben contener los mismos
+   lotes y estados.
+4. No utilizar `/admin/reset-lots`: elimina datos y no sirve para trasladarlos.
+
+Si se usa una base externa (PostgreSQL/Oracle), hacer el respaldo con el proveedor
+antes del despliegue; la transacción de consolidación sigue siendo atómica, pero
+la copia automática de archivo sólo corresponde a SQLite.

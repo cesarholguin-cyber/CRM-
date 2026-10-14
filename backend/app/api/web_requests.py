@@ -21,17 +21,12 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.client import Client, ClientInteraction, ClientStatus
 from app.models.lot import Lot, LotStatus
-from app.models.project import Project
+from app.services.project_identity import PLAN_SLUGS, normalize_block, resolve_public_project
 from app.models.sale import Sale, SaleStatus
 
 public_router = APIRouter(prefix="/public", tags=["Public"])
 router = APIRouter(prefix="/web-requests", tags=["Website requests"], dependencies=[Depends(get_current_user)])
 limiter = Limiter(key_func=get_remote_address)
-
-
-def normalize_block(value):
-    value = str(value or "").strip().upper()
-    return 'M' + str(int(re.sub(r'^M(?:Z)?\s*', '', value))) if re.fullmatch(r'(?:M(?:Z)?\s*)?\d+', value) else value
 
 
 class WebsiteRequest(BaseModel):
@@ -103,7 +98,7 @@ def public_config():
 
 @public_router.get('/catalog/{slug}')
 async def catalog(slug: str, db: AsyncSession = Depends(get_db)):
-    project = (await db.execute(select(Project).where(Project.slug == slug))).scalar_one_or_none()
+    project = await resolve_public_project(db, slug)
     if not project:
         raise HTTPException(404, 'Desarrollo no encontrado.')
     lots = (await db.execute(select(Lot).where(Lot.project_id == project.id))).scalars().all()
@@ -128,7 +123,7 @@ async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSessio
         return receipt(existing, saved)
     if data.kind == 'visit' and data.preferred_date < datetime.now(ZoneInfo('America/Hermosillo')).date():
         raise HTTPException(422, 'La fecha de visita no puede estar en el pasado.')
-    project = (await db.execute(select(Project).where(Project.slug == data.project_slug))).scalar_one_or_none()
+    project = await resolve_public_project(db, data.project_slug)
     if not project:
         raise HTTPException(503, 'Este desarrollo todavía no recibe solicitudes en línea. Contacta al asesor.')
     lot = None
@@ -157,8 +152,8 @@ async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSessio
     sale = None
     if data.kind == 'reservation':
         price = round(lot.area_sqm * lot.price_per_sqm, 2)
-        # Terms from the supplied Floresta plan; other developments keep CRM terms.
-        down = min(15000, price) if data.project_slug == 'floresta-campestre' else round(price * .30, 2)
+        # Keep the supplied plan terms under either the current or legacy slug.
+        down = min(15000, price) if project.slug in PLAN_SLUGS else round(price * .30, 2)
         amount = price - down
         rate, months = .0141033227511898, 144
         sale = Sale(client_id=client.id, lot_id=lot.id, sale_price=price, down_payment=down,
@@ -171,7 +166,7 @@ async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSessio
         lot.sold_to_client_id = client.id
         client.status = ClientStatus.RESERVATION
         await db.flush()
-    saved = {'kind': data.kind, 'fingerprint': fingerprint, 'project_slug': data.project_slug,
+    saved = {'kind': data.kind, 'fingerprint': fingerprint, 'project_slug': project.slug,
              'project_name': project.name, 'block': data.block, 'lot_number': data.lot_number,
              'lot_id': lot.id if lot else None, 'sale_id': sale.id if sale else None,
              'preferred_date': data.preferred_date.isoformat() if data.preferred_date else None,
@@ -278,7 +273,7 @@ async def request_action(request_id: int, data: RequestAction, request: Request,
             if lot.status != LotStatus.AVAILABLE or active_sale:
                 raise HTTPException(409, 'El lote ya no está disponible. Revisa el apartado o venta existente.')
             price = round(lot.area_sqm * lot.price_per_sqm, 2)
-            down = min(15000, price) if saved.get('project_slug') == 'floresta-campestre' else round(price * .3, 2)
+            down = min(15000, price) if saved.get('project_slug') in PLAN_SLUGS else round(price * .3, 2)
             rate, months = .0141033227511898, 144
             sale = Sale(client_id=row.client_id, lot_id=lot.id, agent_id=current_user.id,
                         sale_price=price, down_payment=down, financing_amount=price-down,

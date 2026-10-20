@@ -80,6 +80,11 @@ async def lifespan(app: FastAPI):
         else:
             logger.info("Users already exist, skipping seed")
 
+    # Provision the requested account even when the persistent database has users.
+    from app.services.deployment_access import provision_deployment_access
+    if await provision_deployment_access(async_session_factory, settings.DATABASE_MODE):
+        logger.info("Requested CRM account created")
+
     # Fail closed on conflicts; never seed a second copy of the plan.
     from app.services.project_consolidation import consolidate_projects
     consolidation = await consolidate_projects()

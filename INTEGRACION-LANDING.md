@@ -12,6 +12,18 @@ Construir desde `master` con el Dockerfile del repositorio; puerto interno 80. L
 
 ## Conexión
 
+### Cuenta adicional solicitada (20 octubre 2026)
+
+En modo `embedded`, al iniciar se crea la cuenta indicada en
+`backend/app/data/deployment-access.json`, incluso si la base ya contiene usuarios.
+El archivo contiene solamente el hash bcrypt de la contraseña entregada por el
+usuario. El perfil es **PROMOTOR**, activo y sin privilegios de superusuario.
+No cambia las cuentas anteriores, los lotes ni los expedientes. Si el correo ya
+existe, conserva su contraseña, estado y configuración de seguridad; los siguientes
+deploys no restablecen contraseñas. La operación se serializa entre procesos.
+No se aplica en Oracle ni en modo externo. Conservar el volumen de datos actual
+en Easypanel y desplegar `master`; no requiere configurar Supabase.
+
 La landing usa `https://aztrotech-crm-terrenos.9wq2vl.easypanel.host/api/v1`; se puede cambiar con `VITE_CRM_API_URL` al construirla.
 
 - `GET /api/v1/public/catalog/{slug}`: inventario público, sin datos del cliente.

@@ -65,7 +65,9 @@ class Client(Base):
     # Encrypted field accessors
     @property
     def full_name(self) -> str:
-        return decrypt_field(self._full_name) if self._full_name and not self._full_name.startswith("dec::") else self._full_name
+        if self._full_name and self._full_name.startswith("dec::"):
+            return self._full_name[5:]
+        return decrypt_field(self._full_name) if self._full_name else self._full_name
 
     @full_name.setter
     def full_name(self, value: str):

@@ -6,6 +6,7 @@ from app.models.client import ClientStatus, LeadSource
 
 class ClientCreate(BaseModel):
     project_id: Optional[int] = None
+    assigned_agent_id: Optional[int] = Field(default=None, gt=0)
     full_name: str = Field(..., min_length=1, max_length=255)
     email: Optional[str] = None
     phone: Optional[str] = None

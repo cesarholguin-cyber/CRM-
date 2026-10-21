@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.core.audit import write_audit_log
 from app.models.client import Client, ClientStatus, ClientInteraction
 from app.models.user import User
+from app.models.project import Project
 from app.schemas.client import (
     ClientCreate, ClientUpdate, ClientResponse,
     InteractionCreate, InteractionResponse,
@@ -74,6 +75,13 @@ async def create_client(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
+    assigned_agent_id = client_data.assigned_agent_id or current_user.id
+    agent = await db.get(User, assigned_agent_id)
+    if agent is None or not agent.is_active:
+        raise HTTPException(422, "El asesor seleccionado no existe o está inactivo.")
+    if client_data.project_id is not None and await db.get(Project, client_data.project_id) is None:
+        raise HTTPException(422, "El proyecto seleccionado no existe.")
+
     client = Client(
         project_id=client_data.project_id,
         full_name=client_data.full_name,
@@ -85,7 +93,7 @@ async def create_client(
         notes=client_data.notes,
         budget_range=client_data.budget_range,
         preferred_lot_size=client_data.preferred_lot_size,
-        assigned_agent_id=client_data.assigned_agent_id or current_user.id,
+        assigned_agent_id=assigned_agent_id,
     )
     db.add(client)
     await db.commit()

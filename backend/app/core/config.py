@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     SUPABASE_PUBLISHABLE_KEY: str = ""
     SUPABASE_SECRET_KEY: str = ""
 
+    # Tutorial objects are private in Backblaze; these credentials are server-only.
+    B2_ENDPOINT_URL: str = ""
+    B2_REGION: str = ""
+    B2_BUCKET: str = ""
+    B2_APPLICATION_KEY_ID: str = ""
+    B2_APPLICATION_KEY: str = ""
+
     # Security - JWT
     SECRET_KEY: str = "change-me-in-production"
     ALGORITHM: str = "HS256"

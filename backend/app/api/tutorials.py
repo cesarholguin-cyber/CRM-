@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
@@ -66,7 +65,7 @@ async def create_tutorial(title: str = Form(..., min_length=1, max_length=160),
     if not (is_mp4 or is_webm):
         raise HTTPException(422, "Selecciona un video MP4 o WebM válido.")
     mime = 'video/mp4' if is_mp4 else 'video/webm'
-    path = f'{user.id}/{uuid4().hex}{extension}'
+    path = storage.new_video_path(user.id, extension)
     try:
         await storage.upload_video(path, file, mime, size)
         video = Tutorial(title=title, description=description.strip(), object_path=path,

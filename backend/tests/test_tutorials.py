@@ -58,7 +58,7 @@ async def test_systems_publishes_and_admin_can_list_and_play(setup):
     assert result.json()['title'] == 'Registrar un cliente'
     assert 'object_path' not in result.json()
     upload.assert_awaited_once()
-    assert upload.call_args.args[0].startswith(f'{caller.id}/')
+    assert upload.call_args.args[0].startswith(f'b2/tutorials/{caller.id}/')
     remove.assert_not_called()
     caller.role = 'ADMIN'
     listed = await http.get('/api/v1/tutorials')

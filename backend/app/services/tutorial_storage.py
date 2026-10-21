@@ -31,19 +31,30 @@ async def storage_request(method, path, **kwargs):
     return response.json()
 
 
+def new_video_path(user_id, extension):
+    from uuid import uuid4
+    return f'b2/tutorials/{user_id}/{uuid4().hex}{extension}'
+
+
 async def upload_video(path, file, content_type, size):
-    async def chunks():
-        while chunk := await file.read(1024 * 1024):
-            yield chunk
-    await storage_request('POST', f'/object/{BUCKET}/{path}', content=chunks(),
-                          headers={'Content-Type': content_type, 'Content-Length': str(size),
-                                   'x-upsert': 'false', 'cache-control': 'max-age=3600'})
+    # All new uploads go to Backblaze. Never fall back to Supabase on failure.
+    if not path.startswith('b2/tutorials/'):
+        raise HTTPException(422, "Destino de video inválido.")
+    from app.services import backblaze_storage
+    await backblaze_storage.upload(path, file, content_type, size)
 
 
 async def remove_video(path):
+    if path.startswith('b2/tutorials/'):
+        from app.services import backblaze_storage
+        return await backblaze_storage.remove(path)
     await storage_request('DELETE', f'/object/{BUCKET}', json={'prefixes': [path]})
 
 
 async def signed_video_url(path):
+    if path.startswith('b2/tutorials/'):
+        from app.services import backblaze_storage
+        return await backblaze_storage.signed_url(path, SIGNED_URL_SECONDS)
+    # Previously uploaded tutorials retain access to their original provider.
     result = await storage_request('POST', f'/object/sign/{BUCKET}/{path}', json={'expiresIn': SIGNED_URL_SECONDS})
     return settings.SUPABASE_URL.rstrip('/') + '/storage/v1' + result['signedURL']

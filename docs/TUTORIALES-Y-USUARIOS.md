@@ -19,16 +19,30 @@ Los permisos se verifican en el servidor y en la navegación. Sistemas entra dir
 3. Escribe un título, una descripción opcional y selecciona un MP4 o WebM de hasta 50 MB. Se recomienda MP4 con video H.264 y audio AAC para compatibilidad con los navegadores.
 4. Al completar la carga, los administradores lo encuentran en Ver videos. Pueden buscar por título o descripción y reproducirlo dentro del CRM.
 
-Los archivos se guardan en el bucket privado `crm-tutoriales`. La tabla privada `crm.tutorials` conserva solo metadatos; no almacena los videos en PostgreSQL. La reproducción obtiene una dirección firmada de una hora después de verificar la sesión y el rol; no se entrega la clave de servicio. Una dirección firmada ya emitida funciona hasta que vence. El reproductor permite volver a abrir el video si venció o falló la conexión.
+Los nuevos archivos se guardan en el bucket privado `CRM-Terrenos` de Backblaze B2. La tabla privada `crm.tutorials` conserva solo metadatos; no almacena los videos en PostgreSQL. La reproducción obtiene una dirección firmada de una hora después de verificar la sesión y el rol; no se entrega la clave de servicio. Una dirección firmada ya emitida funciona hasta que vence. El reproductor permite volver a abrir el video si venció o falló la conexión.
 
 ## Despliegue
 
-Para este proyecto ya se aplicó y verificó `20261021190506_crm_tutorials_and_usernames.sql` y se provisionó el bucket privado. Basta desplegar el commit correspondiente del CRM en Easypanel con las variables Supabase existentes. No hay variables nuevas.
+La migración `20261021190506_crm_tutorials_and_usernames.sql` ya está aplicada. Este cambio de almacenamiento no necesita otra migración. Antes de desplegar, agrega estas variables al servicio del CRM en Easypanel, conservando las variables Supabase existentes:
+
+```dotenv
+B2_ENDPOINT_URL=https://s3.us-east-005.backblazeb2.com
+B2_REGION=us-east-005
+B2_BUCKET=CRM-Terrenos
+B2_APPLICATION_KEY_ID=<keyID de Backblaze>
+B2_APPLICATION_KEY=<applicationKey de la misma credencial>
+```
+
+Las credenciales están excluidas de Git y de la imagen Docker; no se configuran en el frontend. El archivo privado `EASYPANEL-BACKBLAZE.env`, fuera del repositorio, reúne los valores del panel; no usarlo mientras indique que la credencial está pendiente de validar. Sin configuración B2, el CRM conserva su funcionamiento y muestra un error claro al intentar subir o abrir un video nuevo.
+
+Los objetos nuevos llevan el prefijo `b2/tutorials/` en su referencia privada; los videos anteriores conservan su referencia a Supabase para seguir reproduciéndose. No se envían cargas nuevas a Supabase ni se cambia de proveedor automáticamente si Backblaze falla. No se modifica el almacenamiento de expedientes de ventas.
+
+La carga usa el servidor del CRM y la reproducción usa enlaces temporales firmados directamente a Backblaze. No hace falta abrir el bucket ni agregar permisos CORS para el reproductor de video normal. El límite del CRM permanece en 50 MB por archivo (es un límite de la aplicación). El servidor envía el archivo desde su archivo temporal, sin cargarlo completo en memoria. Si falla el registro del tutorial, elimina todas las versiones del objeto de ese intento para no consumir espacio por versiones ocultas.
 
 Para instalar en otro entorno:
 
 - Aplicar la migración con la herramienta de migraciones habitual, conservando las migraciones anteriores. El marcador `supabase-tutorials-v3-ready` impide arrancar esta versión antes de actualizar el esquema.
-- Con `backend/.env` configurado de forma privada, ejecutar `python backend/scripts/setup_tutorial_storage.py`. Usa `SUPABASE_URL` y `SUPABASE_SECRET_KEY`; verifica privacidad, tipos MIME y tamaño. No habilitar acceso público ni políticas abiertas de Storage.
+- Con `backend/.env` configurado de forma privada, ejecutar `python backend/scripts/setup_tutorial_storage.py`. Usa las variables `B2_*` y verifica el bucket existente sin modificarlo. No habilitar acceso público.
 - No recrear la base, volver a importar inventario ni ejecutar inicializadores de pruebas.
 
 La migración convierte los nombres de usuario antiguos que eran correos en identificadores únicos y conserva el correo de acceso, el ID, el rol y el vínculo a Supabase Auth. No modifica contraseñas, clientes, ventas ni lotes. El respaldo de los identificadores previos está fuera del repositorio.
@@ -38,6 +52,6 @@ La migración convierte los nombres de usuario antiguos que eran correos en iden
 - Pruebas de permisos para los tres roles; Sistemas rechazado incluso si conserva una bandera de superusuario antigua.
 - Archivos vacíos, formato inválido, exceso de tamaño, fallos de almacenamiento y limpieza ante fallo de metadatos.
 - Edición y unicidad del nombre de usuario; creación de cuentas Sistemas con rol privado.
-- Carga y reproducción reales en Storage con un archivo temporal, lectura pública rechazada y limpieza posterior. Las filas temporales se revierten; los 178 lotes vendidos siguen intactos.
+- Carga y reproducción en el almacenamiento privado con un archivo temporal, lectura pública rechazada y limpieza posterior. Las filas temporales se revierten; los 178 lotes vendidos siguen intactos.
 - Escritorio y móvil, tema claro y oscuro, formulario accesible con teclado, publicación y reproductor con API de prueba aislada.
 - Asesor de seguridad Supabase sin hallazgos. Se conserva el SQL ejecutado en una migración creada por CLI; la extracción automática mediante `db pull` requiere el Docker local no disponible en este equipo.

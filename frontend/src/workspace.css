@@ -225,3 +225,35 @@ body { background:var(--crm-bg); }
 @media(max-width:640px){.dossier-dialog{width:calc(100% - 16px);max-height:95dvh;border-radius:16px}.dossier-header{padding:18px}.dossier-body{padding:14px;gap:14px}.dossier-client,.dossier-sale-body{padding:15px}.dossier-client dl,.document-fields{grid-template-columns:1fr}.dossier-section-heading{gap:12px}.document-row{flex-wrap:wrap}.document-row>div{flex-basis:calc(100% - 35px)}.document-row button{margin-left:30px}.document-drop input{font-size:11px}.dossier-dialog .input{font-size:16px}.sale-archive-actions button{min-height:40px}.dossier-sale>summary{padding:16px}}
 
 .document-upload{scroll-margin-top:130px}
+
+/* Explicit confirmation before removing a client. */
+.client-delete-trigger{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:40px;min-height:40px;padding:8px 10px;border-radius:10px;color:#a53b3b;background:transparent;transition:background .18s,color .18s;cursor:pointer;font-size:12px;font-weight:600}
+.client-delete-trigger:hover{background:#fbe9e6;color:#862a2a}
+.client-delete-trigger:focus-visible,.client-delete-dialog button:focus-visible{outline:3px solid #aebd9b;outline-offset:3px}
+.client-delete-dialog{width:min(480px,calc(100% - 32px));max-height:calc(100dvh - 32px);margin:auto;padding:28px;border:1px solid #e3e5da;border-radius:22px;color:#243c30;background:#fafbf6;box-shadow:0 28px 100px #10291c45;overflow:auto}
+.client-delete-dialog[open]{animation:client-delete-appear .2s ease-out}
+.client-delete-dialog::backdrop{background:#122b2480;backdrop-filter:blur(8px)}
+.client-delete-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.client-delete-symbol{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:#fbe9e6;color:#a53b3b}
+.client-delete-dialog h2{font-size:25px;font-weight:650;letter-spacing:-.5px;margin-bottom:12px}
+.client-delete-dialog p{font-size:14px;line-height:1.65;overflow-wrap:anywhere}
+.client-delete-confirm{display:flex;align-items:flex-start;gap:12px;padding:16px;margin-top:24px;border:1px solid #dce3d5;background:#fff;border-radius:12px;font-size:13px;line-height:1.6;cursor:pointer}
+.client-delete-confirm.is-checked{border-color:#aebd9b;background:#f0f4e9}
+.client-delete-confirm input{width:19px;height:19px;flex:0 0 19px;margin-top:2px;accent-color:#315a40;cursor:pointer}
+.client-delete-confirm input:focus-visible{outline:3px solid #aebd9b;outline-offset:3px}
+.client-delete-actions{display:flex;gap:12px;margin-top:24px}
+.client-delete-actions>button{flex:1;min-height:46px}
+.client-delete-submit{display:flex;align-items:center;justify-content:center;gap:8px;background:#a13936;border:1px solid #a13936;border-radius:10px;color:white;font-size:13px;font-weight:650;cursor:pointer;transition:background .18s}
+.client-delete-submit:hover:not(:disabled){background:#862a2a}
+.client-delete-submit:disabled{background:#e8e9e2;border-color:#e0e2d9;color:#747b70;cursor:not-allowed}
+.client-delete-dialog button:disabled,.client-delete-confirm input:disabled{cursor:not-allowed}
+.client-delete-error{margin-top:16px;padding:12px;border-radius:10px;color:#963b35;background:#fbe9e6}
+[data-theme="dark"] .client-delete-dialog{color:#e5ecdf;background:#18251e;border-color:#354738}
+[data-theme="dark"] .client-delete-confirm{background:#202f26;border-color:#415440}
+[data-theme="dark"] .client-delete-confirm.is-checked{background:#293e2d;border-color:#82986e}
+[data-theme="dark"] .client-delete-symbol,[data-theme="dark"] .client-delete-error{background:#402a28;color:#ffb8ad}
+[data-theme="dark"] .client-delete-trigger{color:#ffb8ad}[data-theme="dark"] .client-delete-trigger:hover{background:#402a28}
+[data-theme="dark"] .client-delete-submit:disabled{background:#303c32;border-color:#415440;color:#a4afa0}
+@keyframes client-delete-appear{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:480px){.client-delete-dialog{padding:22px}.client-delete-actions{flex-direction:column-reverse}}
+@media(prefers-reduced-motion:reduce){.client-delete-dialog[open]{animation:none}.client-delete-trigger,.client-delete-submit{transition:none}}

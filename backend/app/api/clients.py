@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
+from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
-from app.core.audit import write_audit_log
+from app.core.audit import write_audit_log, AuditLog
 from app.models.client import Client, ClientStatus, ClientInteraction
 from app.models.user import User
 from app.models.project import Project
+from app.models.sale import Sale, PaymentPlan
+from app.models.lot import Lot
 from app.schemas.client import (
     ClientCreate, ClientUpdate, ClientResponse,
     InteractionCreate, InteractionResponse,
@@ -139,21 +142,31 @@ async def update_client(
 async def delete_client(
     client_id: int,
     request: Request,
+    confirmed: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_admin),
 ):
-    result = await db.execute(select(Client).where(Client.id == client_id))
+    if not confirmed:
+        raise HTTPException(422, "Marca la casilla de confirmación para eliminar el cliente.")
+    result = await db.execute(select(Client).where(Client.id == client_id).with_for_update())
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client not found")
 
-    await db.delete(client)
-    await db.commit()
-
-    write_audit_log(
-        current_user.id, current_user.email, "CLIENT_DELETED", "client", client_id,
-        **get_request_info(request),
-    )
+    linked = (await db.scalar(select(Sale.id).where(Sale.client_id == client_id).limit(1))
+              or await db.scalar(select(PaymentPlan.id).where(PaymentPlan.client_id == client_id).limit(1))
+              or await db.scalar(select(Lot.id).where(Lot.sold_to_client_id == client_id).limit(1)))
+    if linked:
+        raise HTTPException(409, "No se puede eliminar este cliente porque tiene lotes, apartados o ventas vinculados. Su historial y sus documentos deben conservarse.")
+    try:
+        await db.delete(client)
+        db.add(AuditLog(user_id=current_user.id, username=current_user.email,
+                       action='CLIENT_DELETED', entity_type='client', entity_id=client_id,
+                       details={'confirmed': True}, **get_request_info(request)))
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "El cliente tiene registros vinculados y no se puede eliminar.") from None
     return {"message": "Client deleted"}
 
 

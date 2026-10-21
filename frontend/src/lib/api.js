@@ -99,7 +99,7 @@ export const clientsApi = {
   get: (id) => api.get(`/clients/${id}`),
   create: (data) => api.post('/clients', data),
   update: (id, data) => api.put(`/clients/${id}`, data),
-  delete: (id) => api.delete(`/clients/${id}`),
+  delete: (id, confirmed = false) => api.delete(`/clients/${id}`, { params: { confirmed } }),
   interactions: (id) => api.get(`/clients/${id}/interactions`),
   addInteraction: (id, data) => api.post(`/clients/${id}/interactions`, data),
 };

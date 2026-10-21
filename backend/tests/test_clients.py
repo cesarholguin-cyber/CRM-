@@ -12,7 +12,9 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.core.database import Base, get_db
 from app.api import clients
 from app.api.deps import get_current_user
-from app.models import User, Client
+from app.models import User, Client, Project, Lot, Sale
+from app.models.client import ClientInteraction
+from app.core.audit import AuditLog
 
 
 @pytest.fixture
@@ -83,3 +85,54 @@ async def test_inactive_agent_cannot_receive_new_client(setup):
     http,_,_,_,inactive,_ = setup
     response = await http.post('/api/v1/clients',json={'full_name':'No guardar','assigned_agent_id':inactive.id})
     assert response.status_code == 422
+
+
+async def test_delete_requires_confirmation_then_removes_client_and_contact_history(setup):
+    http,sessions,_,_,_,_ = setup
+    created = (await http.post('/api/v1/clients',json={'full_name':'Cliente para eliminar'})).json()
+    client_id = created['id']
+    async with sessions() as db:
+        db.add(ClientInteraction(client_id=client_id,interaction_type='note',notes='Contacto'))
+        await db.commit()
+    for suffix in ('', '?confirmed=false'):
+        assert (await http.delete(f'/api/v1/clients/{client_id}'+suffix)).status_code == 422
+    async with sessions() as db:
+        assert await db.get(Client,client_id) is not None
+        assert await db.scalar(select(func.count()).select_from(ClientInteraction)) == 1
+    assert (await http.delete(f'/api/v1/clients/{client_id}?confirmed=true')).status_code == 200
+    async with sessions() as db:
+        assert await db.get(Client,client_id) is None
+        assert await db.scalar(select(func.count()).select_from(ClientInteraction)) == 0
+        entry = await db.scalar(select(AuditLog).where(AuditLog.action=='CLIENT_DELETED'))
+        assert entry.entity_id == client_id and entry.details == {'confirmed':True}
+    assert (await http.delete(f'/api/v1/clients/{client_id}?confirmed=true')).status_code == 404
+
+
+async def test_promoter_cannot_delete_even_with_confirmation(setup):
+    http,sessions,caller,_,_,_ = setup
+    created = (await http.post('/api/v1/clients',json={'full_name':'Conservar'})).json()
+    caller.role = 'PROMOTOR'
+    assert (await http.delete(f"/api/v1/clients/{created['id']}?confirmed=true")).status_code == 403
+    async with sessions() as db:
+        assert await db.get(Client,created['id']) is not None
+
+
+@pytest.mark.parametrize('link_kind',['sale','lot'])
+async def test_customer_with_property_history_cannot_be_deleted(setup,link_kind):
+    http,sessions,_,_,_,_ = setup
+    created = (await http.post('/api/v1/clients',json={'full_name':'Propietario'})).json()
+    async with sessions() as db:
+        project = Project(name='Triunfo',slug='campestre-el-triunfo')
+        db.add(project);await db.flush()
+        lot = Lot(project_id=project.id,lot_number=1,block='M1',area_sqm=200,price_per_sqm=800,total_price=160000,status='SOLD',
+                  sold_to_client_id=created['id'] if link_kind=='lot' else None)
+        db.add(lot);await db.flush();lot_id=lot.id
+        if link_kind=='sale':
+            db.add(Sale(client_id=created['id'],lot_id=lot.id,sale_price=160000,status='PAID'))
+        await db.commit()
+    r = await http.delete(f"/api/v1/clients/{created['id']}?confirmed=true")
+    assert r.status_code == 409
+    async with sessions() as db:
+        assert await db.get(Client,created['id']) is not None
+        assert (await db.get(Lot,lot_id)).status.value == 'sold'
+        assert await db.scalar(select(func.count()).select_from(AuditLog)) == 0

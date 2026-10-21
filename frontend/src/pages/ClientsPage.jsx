@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import SaleDossier from '../components/SaleDossier';
+import DeleteClientDialog from '../components/DeleteClientDialog';
+import { useAuth } from '../lib/auth';
 import { clientsApi } from '../lib/api';
-import { Users, Plus, Search, Phone, Mail, MessageCircle, Filter, UserPlus, ChevronDown, X } from 'lucide-react';
+import { Users, Plus, Search, Phone, Mail, MessageCircle, Filter, UserPlus, ChevronDown, X, Trash2 } from 'lucide-react';
 
 const statusConfig = {
   lead: { label: 'Lead', color: 'bg-gray-100/80 text-gray-600 border-gray-200/50 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-600/50', dot: 'bg-gray-400' },
@@ -15,6 +17,9 @@ const statusConfig = {
 };
 
 export default function ClientsPage() {
+  const { user } = useAuth();
+  const [deleteClient, setDeleteClient] = useState(null);
+  const [notice, setNotice] = useState('');
   const [clients, setClients] = useState([]);
   const [dossierClient, setDossierClient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -130,6 +135,7 @@ export default function ClientsPage() {
       </div>
 
       {/* Loading State */}
+      {notice && <p className="dossier-success mb-4" role="status">{notice}</p>}
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="relative w-10 h-10">
@@ -212,7 +218,7 @@ export default function ClientsPage() {
                       <td className="px-5 py-3.5 text-sm text-rf-gray dark:text-gray-400 capitalize hidden md:table-cell">{client.lead_source || '—'}</td>
                       <td className="px-5 py-3.5 text-sm text-rf-gray dark:text-gray-400 hidden md:table-cell">{client.created_at ? new Date(client.created_at).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</td>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                           {client.phone && (
                             <a
                               href={`https://wa.me/${client.phone.replace(/[^0-9]/g, '')}`}
@@ -233,6 +239,9 @@ export default function ClientsPage() {
                               <Mail size={15} />
                             </a>
                           )}
+                          {user?.role === 'ADMIN' && <button type="button" className="client-delete-trigger" title="Eliminar cliente"
+                            aria-label={`Eliminar a ${client.full_name?.replace(/^dec::/, '')}`}
+                            onClick={() => { setNotice(''); setDeleteClient(client); }}><Trash2 size={17}/></button>}
                         </div>
                       </td>
                     </tr>
@@ -244,7 +253,10 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {dossierClient && <SaleDossier clientId={dossierClient} onClose={() => setDossierClient(null)} onEditClient={client => { setDossierClient(null); openEdit(client); }}/> }
+      {dossierClient && <SaleDossier clientId={dossierClient} onClose={() => setDossierClient(null)} onEditClient={client => { setDossierClient(null); openEdit(client); }}
+        onDeleteClient={user?.role === 'ADMIN' ? client => { setDossierClient(null); setNotice(''); setDeleteClient(client); } : undefined}/> }
+      {deleteClient && <DeleteClientDialog key={deleteClient.id} client={deleteClient} onClose={() => setDeleteClient(null)}
+        onDeleted={id => { setClients(previous => previous.filter(client => client.id !== id)); setDeleteClient(null); setNotice('Cliente eliminado correctamente.'); }}/> }
 
       {/* Modal */}
       {showModal && (

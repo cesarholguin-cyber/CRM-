@@ -12,6 +12,9 @@ engine = create_async_engine(
 )
 
 configure_oracle_session(engine.sync_engine)
+if settings.DATABASE_MODE == "supabase":
+    from app.core.postgres_session import configure_supabase_session
+    configure_supabase_session(engine.sync_engine)
 
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

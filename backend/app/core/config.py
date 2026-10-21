@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     DEBUG: bool = False
 
-    DATABASE_MODE: Literal["embedded", "external", "oracle"] = "embedded"
+    DATABASE_MODE: Literal["embedded", "external", "oracle", "supabase"] = "embedded"
     ORACLE_USER: str = ""
     ORACLE_PASSWORD: str = ""
     ORACLE_DSN: str = ""
@@ -35,6 +35,9 @@ class Settings(BaseSettings):
                 if value:
                     args[name] = value
             return args
+        if self.DATABASE_MODE == "supabase":
+            return {"prepare_threshold": None, "options": "-csearch_path=crm -ctimezone=UTC",
+                    "sslmode": "require", "connect_timeout": 15}
         return {"prepare_threshold": None} if "psycopg" in self.DATABASE_URL else {}
 
     # Database — Render provides DATABASE_URL in sync format; we auto-convert
@@ -103,6 +106,13 @@ class Settings(BaseSettings):
             self.DATABASE_URL = self.DATABASE_URL_SYNC = "oracle+oracledb://@"
         if self.DOCUMENT_STORAGE == "oci" and not all((self.OCI_NAMESPACE, self.OCI_BUCKET)):
             raise ValueError("Configura OCI_NAMESPACE y OCI_BUCKET antes de activar el bucket.")
+        if self.DATABASE_MODE == "supabase":
+            if not self.DATABASE_URL.startswith(("postgresql://", "postgresql+psycopg://")):
+                raise ValueError("Configura la conexión PostgreSQL antes de activar Supabase.")
+            if len(self.SECRET_KEY) < 32 or self.SECRET_KEY == "change-me-in-production":
+                raise ValueError("Conserva SECRET_KEY del CRM actual antes de activar Supabase.")
+            # Both engines must target the same database, including the audit writer.
+            self.DATABASE_URL_SYNC = self.DATABASE_URL
         # Auto-convert URLs to use psycopg driver for Supabase pgbouncer compatibility
         if self.DATABASE_URL:
             # Replace any driver with psycopg
@@ -113,6 +123,8 @@ class Settings(BaseSettings):
             self.DATABASE_URL_SYNC = self.DATABASE_URL_SYNC.replace("+asyncpg", "")
             if "+psycopg" not in self.DATABASE_URL_SYNC:
                 self.DATABASE_URL_SYNC = self.DATABASE_URL_SYNC.replace("postgresql+psycopg://", "postgresql://")
+        if self.DATABASE_MODE == "supabase":
+            self.DATABASE_URL_SYNC = self.DATABASE_URL
 
 
 settings = Settings()

@@ -26,21 +26,22 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[f"{settings.RATE_
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Oracle is initialized by the migration command, never by an app worker.
-    if settings.DATABASE_MODE == "oracle":
+    # Managed databases must be migrated and verified before accepting traffic.
+    if settings.DATABASE_MODE in ("oracle", "supabase"):
         from sqlalchemy import select
         from app.models.oracle import SchemaMigration
         async with async_session_factory() as session:
-            if await session.get(SchemaMigration, "oracle-v1-ready") is None:
-                raise RuntimeError("Completa y verifica la migración de Oracle antes de iniciar el CRM.")
+            marker = "supabase-v1-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
+            if await session.get(SchemaMigration, marker) is None:
+                raise RuntimeError("Completa y verifica la migración de la base antes de iniciar el CRM.")
     async with engine.begin() as conn:
-        if settings.DATABASE_MODE != "oracle":
+        if settings.DATABASE_MODE not in ("oracle", "supabase"):
             await conn.run_sync(Base.metadata.create_all)
-        from app.core.reservation_schema import ensure_reservation_history
-        await ensure_reservation_history(conn)
+            from app.core.reservation_schema import ensure_reservation_history
+            await ensure_reservation_history(conn)
     logger.info("Database tables created/verified")
 
-    if engine.dialect.name == "postgresql":
+    if engine.dialect.name == "postgresql" and settings.DATABASE_MODE != "supabase":
         # Migrate old enum and role values
         async with async_session_factory() as session:
             from sqlalchemy import text as sa_text

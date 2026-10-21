@@ -27,3 +27,5 @@ Wallet*/
 *.db-shm
 *.sqlite*
 .env.oracle
+.env.supabase.local
+supabase/.temp/

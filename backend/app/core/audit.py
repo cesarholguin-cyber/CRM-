@@ -29,9 +29,12 @@ from app.core.config import settings
 from app.core.oracle_session import configure_oracle_session
 
 _sync_engine = create_engine(settings.DATABASE_URL_SYNC, pool_pre_ping=True, hide_parameters=True,
-    connect_args=settings.database_connect_args if settings.DATABASE_MODE == "oracle" else {})
+    connect_args=settings.database_connect_args if settings.DATABASE_MODE in ("oracle", "supabase") else {})
 
 configure_oracle_session(_sync_engine)
+if settings.DATABASE_MODE == "supabase":
+    from app.core.postgres_session import configure_supabase_session
+    configure_supabase_session(_sync_engine)
 
 
 def write_audit_log(

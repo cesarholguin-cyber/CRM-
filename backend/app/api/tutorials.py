@@ -1,15 +1,18 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Response
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.user import UserRole
-from app.models.tutorial import Tutorial
+from app.models.tutorial import Tutorial, TutorialUpload
 from app.services import tutorial_storage as storage
+from app.services import backblaze_storage as b2
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +40,96 @@ class TutorialResponse(BaseModel):
     size_bytes: int
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class UploadRequest(BaseModel):
+    id: UUID
+    title: str = Field(min_length=1, max_length=160)
+    description: str = Field(default='', max_length=2000)
+    filename: str = Field(min_length=1, max_length=255)
+    size_bytes: int = Field(gt=0, le=storage.MAX_VIDEO_BYTES)
+
+
+async def owned_upload(db, upload_id, user):
+    record = await db.scalar(select(TutorialUpload).where(
+        TutorialUpload.id == str(upload_id), TutorialUpload.uploaded_by == user.id).with_for_update().execution_options(populate_existing=True))
+    if record is None:
+        raise HTTPException(404, 'No se encontró esta carga.')
+    if record.state == 'aborted':
+        raise HTTPException(410, 'Esta carga fue descartada. Selecciona de nuevo el video.')
+    created = record.created_at.replace(tzinfo=timezone.utc) if record.created_at.tzinfo is None else record.created_at
+    if record.state == 'pending' and created < datetime.now(timezone.utc) - timedelta(hours=24):
+        raise HTTPException(410, 'Esta carga venció. Selecciona de nuevo el video.')
+    return record
+
+
+@router.post('/uploads')
+async def start_upload(data: UploadRequest, response: Response,
+                       user=Depends(tutorial_uploader), db: AsyncSession = Depends(get_db)):
+    response.headers['Cache-Control'] = 'no-store'
+    title = data.title.strip()
+    extension = Path(data.filename).suffix.lower()
+    if not title or extension not in ('.mp4', '.webm'):
+        raise HTTPException(422, 'Escribe un título y selecciona un video MP4 o WebM.')
+    mime = 'video/mp4' if extension == '.mp4' else 'video/webm'
+    record = await db.get(TutorialUpload, str(data.id))
+    if record is None:
+        record = TutorialUpload(id=str(data.id), uploaded_by=user.id,
+            object_path=storage.new_video_path(user.id, extension), title=title,
+            description=data.description.strip(), size_bytes=data.size_bytes, content_type=mime)
+        db.add(record)
+        try:
+            await db.commit()
+        except IntegrityError:
+            # Concurrent retries share the browser's idempotency key.
+            await db.rollback()
+    record = await owned_upload(db, data.id, user)
+    if (record.title, record.description, record.size_bytes, record.content_type) != (
+            title, data.description.strip(), data.size_bytes, mime):
+        raise HTTPException(409, 'Esta carga pertenece a otro archivo. Selecciona de nuevo el video.')
+    if record.state == 'complete':
+        video = await db.get(Tutorial, record.tutorial_id)
+        return {'id': record.id, 'tutorial': TutorialResponse.model_validate(video), 'parts': []}
+    if not record.storage_upload_id:
+        record.storage_upload_id = await b2.begin_multipart(record.object_path, record.content_type)
+        await db.commit()
+        record = await owned_upload(db, data.id, user)
+    plan = await b2.multipart_plan(record.object_path, record.storage_upload_id, record.size_bytes)
+    await db.commit()
+    return {'id': record.id, **plan}
+
+
+@router.post('/uploads/{upload_id}/complete', response_model=TutorialResponse)
+async def finish_upload(upload_id: UUID, user=Depends(tutorial_uploader), db: AsyncSession = Depends(get_db)):
+    # Serialize completion/abort across workers, including retries after a lost response.
+    record = await owned_upload(db, upload_id, user)
+    if record.state == 'complete':
+        return await db.get(Tutorial, record.tutorial_id)
+    if not record.storage_upload_id:
+        raise HTTPException(409, 'Inicia la carga del video antes de publicarlo.')
+    await b2.complete_multipart(record.object_path, record.storage_upload_id, record.size_bytes, record.content_type)
+    video = Tutorial(title=record.title, description=record.description, object_path=record.object_path,
+                     content_type=record.content_type, size_bytes=record.size_bytes, uploaded_by=user.id)
+    db.add(video)
+    await db.flush()
+    record.state, record.tutorial_id = 'complete', video.id
+    result = TutorialResponse.model_validate(video)
+    await db.commit()
+    return result
+
+
+@router.delete('/uploads/{upload_id}', status_code=204)
+async def cancel_upload(upload_id: UUID, user=Depends(tutorial_uploader), db: AsyncSession = Depends(get_db)):
+    record = await db.scalar(select(TutorialUpload).where(
+        TutorialUpload.id == str(upload_id), TutorialUpload.uploaded_by == user.id).with_for_update().execution_options(populate_existing=True))
+    if record is None:
+        raise HTTPException(404, 'No se encontró esta carga.')
+    if record.state != 'complete':
+        if record.storage_upload_id:
+            await b2.abort_multipart(record.object_path, record.storage_upload_id)
+        await b2.remove(record.object_path)
+        record.state = 'aborted'
+        await db.commit()
 
 
 @router.get('', response_model=list[TutorialResponse])

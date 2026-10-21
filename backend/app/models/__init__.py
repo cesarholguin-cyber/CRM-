@@ -16,4 +16,4 @@ from app.models.document import SaleDocument
 
 from app.models.oracle import IntakeMutex, SchemaMigration
 
-from app.models.tutorial import Tutorial
+from app.models.tutorial import Tutorial, TutorialUpload

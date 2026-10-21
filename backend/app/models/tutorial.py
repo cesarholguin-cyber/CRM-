@@ -14,3 +14,23 @@ class Tutorial(Base):
     size_bytes = Column(Integer, nullable=False)
     uploaded_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+class TutorialUpload(Base):
+    """Durable, user-owned upload session. Never exposed through the Data API."""
+    __tablename__ = 'tutorial_uploads'
+    __table_args__ = (
+        CheckConstraint('size_bytes > 0 AND size_bytes <= 209715200', name='tutorial_uploads_size_check'),
+        CheckConstraint("state IN ('pending', 'complete', 'aborted')", name='tutorial_uploads_state_check'),
+    )
+    id = Column(String(36), primary_key=True)
+    uploaded_by = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+    object_path = Column(String(255), nullable=False, unique=True)
+    storage_upload_id = Column(Text, nullable=True)
+    title = Column(String(160), nullable=False)
+    description = Column(Text, nullable=False, default='')
+    content_type = Column(String(40), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    state = Column(String(16), nullable=False, default='pending')
+    tutorial_id = Column(Integer, ForeignKey('tutorials.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

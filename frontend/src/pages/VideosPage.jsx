@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Video, Play, UploadCloud, Search, X, CheckCircle2, Film } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { tutorialsApi } from '../lib/api';
+import { tutorialUploadError } from '../lib/tutorialUpload';
 import './VideosPage.css';
 
 const MAX_BYTES = 200 * 1024 * 1024;
@@ -49,6 +50,8 @@ export default function VideosPage() {
   const busyRef = useRef(false);
   const fileInput = useRef(null);
   const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState('preparing');
+  const attempt = useRef(null);
   const [uploadError, setUploadError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -80,15 +83,22 @@ export default function VideosPage() {
   async function upload(e) {
     e.preventDefault();
     if (busyRef.current || !file || !title.trim()) return;
-    busyRef.current = true; setBusy(true); setProgress(0); setUploadError(''); setMessage('');
-    const data = new FormData();
-    data.append('title', title.trim()); data.append('description', description.trim()); data.append('file', file);
+    busyRef.current = true; setBusy(true); setProgress(0); setStage('preparing'); setUploadError(''); setMessage('');
+    const previous = attempt.current;
+    if (!previous || previous.file !== file || previous.title !== title.trim() || previous.description !== description.trim()) {
+      if (previous) tutorialsApi.cancelUpload(previous.id).catch(() => {});
+      attempt.current = { id: crypto.randomUUID(), file, title: title.trim(), description: description.trim() };
+    }
     try {
-      const res = await tutorialsApi.upload(data, e => setProgress(e.total ? Math.min(100, Math.round(e.loaded / e.total * 100)) : 0));
-      setVideos(items => [res.data, ...items]);
+      const res = await tutorialsApi.upload(attempt.current, ({ percent, stage }) => { setProgress(percent); setStage(stage); });
+      setVideos(items => [res.data, ...items.filter(item => item.id !== res.data.id)]);
+      attempt.current = null;
       setTitle(''); setDescription(''); setFile(null); fileInput.current.value = '';
       setMessage('Tutorial publicado. Los administradores ya pueden verlo.');
-    } catch (error) { setUploadError(errorText(error, 'No se pudo subir el video. Revisa tu conexión e intenta de nuevo.')); }
+    } catch (error) {
+      setUploadError(tutorialUploadError(error));
+      if (error.response?.status === 410) attempt.current = null;
+    }
     finally { busyRef.current = false; setBusy(false); }
   }
   const visible = videos.filter(video => normalize(`${video.title} ${video.description}`).includes(normalize(query)));
@@ -107,10 +117,10 @@ export default function VideosPage() {
           </div>
           <div className="tutorial-file-area"><Film size={32} strokeWidth={1.3}/><label htmlFor="tutorial-file">Selecciona tu video</label><input ref={fileInput} id="tutorial-file" type="file" accept="video/mp4,video/webm,.mp4,.webm" onChange={chooseFile} required aria-describedby="video-format"/><p id="video-format">MP4 o WebM · Máximo 200 MB<br/>Para mayor compatibilidad: MP4, H.264 y AAC.</p>{file && <p className="tutorial-file-name">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</p>}</div>
         </fieldset>
-        {busy && <div className="tutorial-progress" role="status"><progress max="100" value={progress} aria-label="Progreso de carga"/><span>{progress < 100 ? `Subiendo archivo… ${progress}%` : 'Guardando el video… Mantén esta página abierta.'}</span></div>}
+        {busy && <div className="tutorial-progress" role="status"><progress max="100" value={progress} aria-label="Progreso de carga"/><span>{stage === 'preparing' ? 'Preparando carga segura…' : stage === 'retrying' ? `Reintentando la parte pendiente… ${progress}%` : stage === 'finishing' ? 'Verificando y publicando el video…' : `Subiendo archivo… ${progress}%`}</span></div>}
         {uploadError && <p className="tutorial-error" role="alert">{uploadError}</p>}
         {message && <p className="tutorial-success" role="status"><CheckCircle2 size={18}/>{message}</p>}
-        <div className="tutorial-upload-footer"><p>Los videos se guardan de forma privada.</p><button className="btn-primary" disabled={busy || !file || !title.trim()}><UploadCloud size={17}/>{busy ? 'Publicando…' : 'Publicar tutorial'}</button></div>
+        <div className="tutorial-upload-footer"><p>{uploadError && attempt.current ? 'Reintenta aquí para continuar con las partes guardadas.' : 'Los videos se guardan de forma privada.'}</p><button className="btn-primary" disabled={busy || !file || !title.trim()}><UploadCloud size={17}/>{busy ? 'Publicando…' : uploadError && attempt.current ? 'Reintentar carga' : 'Publicar tutorial'}</button></div>
       </form>
     </section>}
     <section aria-labelledby="library-title">

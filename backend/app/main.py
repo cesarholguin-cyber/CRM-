@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
         from sqlalchemy import select
         from app.models.oracle import SchemaMigration
         async with async_session_factory() as session:
-            marker = "supabase-tutorials-v3-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
+            marker = "supabase-tutorials-v4-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
             if await session.get(SchemaMigration, marker) is None:
                 raise RuntimeError("Completa y verifica la migración de la base antes de iniciar el CRM.")
     async with engine.begin() as conn:

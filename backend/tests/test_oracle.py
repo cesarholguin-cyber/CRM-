@@ -35,7 +35,8 @@ def test_oracle_ddl_has_identity_timestamps_and_only_conditional_unique_lot_inde
     assert "'CANCELLED', 'REVERSED'" in sql
     assert 'ON DELETE RESTRICT' not in sql
     for table in Base.metadata.sorted_tables:
-        if table.name not in ('document_objects', 'intake_mutex', 'crm_schema_migrations'):
+        # Upload sessions use a client-generated UUID for idempotent retries.
+        if table.name not in ('document_objects', 'intake_mutex', 'crm_schema_migrations', 'tutorial_uploads'):
             assert table.c.id.identity is not None
 
 

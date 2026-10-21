@@ -104,3 +104,57 @@ def test_client_uses_server_credentials_sigv4_and_path_addressing(monkeypatch):
     monkeypatch.setattr(settings,'B2_APPLICATION_KEY','')
     with pytest.raises(HTTPException) as error:b2.client()
     assert error.value.status_code==503
+
+
+def missing_object(fake):
+    fake.head_object.side_effect = ClientError({'Error': {'Code': '404'}}, 'HeadObject')
+
+
+async def test_multipart_plan_binds_part_number_size_and_resumes(fake):
+    missing_object(fake)
+    fake.get_paginator.return_value.paginate.return_value = [{'Parts': [{'PartNumber': 1, 'Size': b2.PART_BYTES}]}]
+    plan = await b2.multipart_plan('b2/tutorials/1/unique.mp4', 'upload-id', b2.PART_BYTES + 100)
+    assert plan['parts'][0]['received'] is True and plan['parts'][1]['received'] is False
+    assert [p['size'] for p in plan['parts']] == [b2.PART_BYTES, 100]
+    options = fake.generate_presigned_url.call_args.kwargs
+    assert options['Params']['ContentLength'] == 100
+    assert options['Params']['PartNumber'] == 2 and options['Params']['UploadId'] == 'upload-id'
+    assert options['ExpiresIn'] == 3600 and options['HttpMethod'] == 'PUT'
+
+
+async def test_completion_checks_actual_parts_before_publishing(fake):
+    missing_object(fake)
+    fake.get_paginator.return_value.paginate.return_value = [{'Parts': [{'PartNumber': 1, 'Size': 500, 'ETag': 'one'}]}]
+    with pytest.raises(HTTPException) as error:
+        await b2.complete_multipart('key', 'id', 600, 'video/mp4')
+    assert error.value.status_code == 409
+    fake.complete_multipart_upload.assert_not_called()
+
+
+async def test_complete_recovers_lost_response_and_verifies_real_header(fake):
+    fake.head_object.return_value = {'ContentLength': 112, 'ContentType': 'video/mp4'}
+    fake.get_object.return_value = {'Body': io.BytesIO(b'\x00\x00\x00\x20ftypisom' + b'\x00' * 100)}
+    await b2.complete_multipart('key', 'id', 112, 'video/mp4')
+    fake.complete_multipart_upload.assert_not_called()
+    fake.get_paginator.assert_not_called()
+    fake.get_object.assert_called_once_with(Bucket='test-private-bucket', Key='key', Range='bytes=0-63')
+
+
+@pytest.mark.parametrize('size,mime,body', [(100, 'video/mp4', b'fake'), (112, 'video/webm', b'fake'), (112, 'video/mp4', b'<html>')])
+async def test_completion_rejects_size_mime_and_magic_mismatch(fake, size, mime, body):
+    fake.head_object.return_value = {'ContentLength': size, 'ContentType': mime}
+    fake.get_object.return_value = {'Body': io.BytesIO(body)}
+    with pytest.raises(HTTPException) as error:
+        await b2.complete_multipart('key', 'id', 112, 'video/mp4')
+    assert error.value.status_code == 422
+
+
+async def test_cors_preserves_other_rules_and_bucket_privacy(fake):
+    old = {'ID': 'other', 'AllowedMethods': ['GET'], 'AllowedOrigins': ['https://other.example']}
+    fake.get_bucket_cors.return_value = {'CORSRules': [old]}
+    await b2.configure_upload_cors(['https://crm.example'])
+    rules = fake.put_bucket_cors.call_args.kwargs['CORSConfiguration']['CORSRules']
+    assert rules[0] == old
+    assert rules[1]['AllowedOrigins'] == ['https://crm.example']
+    assert rules[1]['AllowedMethods'] == ['PUT']
+    fake.put_bucket_acl.assert_not_called()

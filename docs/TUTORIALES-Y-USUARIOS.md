@@ -37,12 +37,17 @@ Las credenciales están excluidas de Git y de la imagen Docker; no se configuran
 
 Los objetos nuevos llevan el prefijo `b2/tutorials/` en su referencia privada; los videos anteriores conservan su referencia a Supabase para seguir reproduciéndose. No se envían cargas nuevas a Supabase ni se cambia de proveedor automáticamente si Backblaze falla. No se modifica el almacenamiento de expedientes de ventas.
 
-La carga usa el servidor del CRM y la reproducción usa enlaces temporales firmados directamente a Backblaze. No hace falta abrir el bucket ni agregar permisos CORS para el reproductor de video normal. El límite del CRM es de 200 MB por archivo (es un límite de la aplicación). El servidor envía el archivo desde su archivo temporal, sin cargarlo completo en memoria. Si falla el registro del tutorial, elimina todas las versiones del objeto de ese intento para no consumir espacio por versiones ocultas.
+La carga del formulario va directamente del navegador a Backblaze en partes de 8 MiB, mediante permisos firmados por una hora, restringidos al objeto, número de parte y tamaño. El CRM recibe únicamente solicitudes pequeñas para preparar y publicar. Esto elimina el doble traslado del video completo por Easypanel que podía terminar en un 502. No se envían claves de Backblaze ni la sesión del CRM al almacenamiento. El límite permanece en 200 MB (200 MiB).
+
+Las partes se reintentan hasta tres veces ante interrupciones o errores transitorios. Si todavía falla, el botón «Reintentar carga» continúa con las partes recibidas mientras se conserve el archivo y formulario en esa página. No se promete reanudación después de cerrar la pestaña. La sesión privada `crm.tutorial_uploads` dura 24 horas; sólo Sistemas y su propietario pueden operarla. El servidor verifica tamaños reales y cabecera MP4/WebM antes de publicar. La confirmación es idempotente y bloquea la fila durante publicación/cancelación, de modo que una respuesta perdida no duplica el tutorial ni elimina uno publicado. Un fallo de metadatos conserva el archivo para recuperar la confirmación.
+
+Backblaze necesita una regla CORS de carga para los orígenes exactos del CRM, manteniendo el bucket privado. Ya se configuraron `https://rfdesarrolloscampestre.com` y `https://aztrotech-crm-terrenos.9wq2vl.easypanel.host`. La reproducción continúa usando enlaces firmados; los tutoriales antiguos siguen funcionando.
 
 Para instalar en otro entorno:
 
-- Aplicar la migración con la herramienta de migraciones habitual, conservando las migraciones anteriores. El marcador `supabase-tutorials-v3-ready` impide arrancar esta versión antes de actualizar el esquema.
-- Con `backend/.env` configurado de forma privada, ejecutar `python backend/scripts/setup_tutorial_storage.py`. Usa las variables `B2_*` y verifica el bucket existente sin modificarlo. No habilitar acceso público.
+- Aplicar también `20261021202815_crm_tutorial_direct_uploads.sql`. El marcador `supabase-tutorials-v4-ready` impide arrancar esta versión antes de actualizar el esquema.
+- Con `backend/.env` configurado de forma privada, ejecutar `python backend/scripts/setup_tutorial_storage.py`. Sin argumentos sólo verifica; para configurar carga directa usar `--upload-origin https://dominio-del-crm` (repetir para cada origen permitido). Conserva reglas ajenas y requiere permiso para actualizar CORS. No habilitar acceso público.
+- Para descartar cargas abandonadas de más de 24 horas, ejecutar `python backend/scripts/cleanup_tutorial_uploads.py`. Sólo limpia objetos de sesiones pendientes vencidas registradas por el CRM, incluidas sus versiones; conserva tutoriales publicados y archivos anteriores.
 - No recrear la base, volver a importar inventario ni ejecutar inicializadores de pruebas.
 
 La migración convierte los nombres de usuario antiguos que eran correos en identificadores únicos y conserva el correo de acceso, el ID, el rol y el vínculo a Supabase Auth. No modifica contraseñas, clientes, ventas ni lotes. El respaldo de los identificadores previos está fuera del repositorio.
@@ -61,3 +66,11 @@ La migración convierte los nombres de usuario antiguos que eran correos en iden
 Con las credenciales definitivas se verificó el bucket privado CRM-Terrenos. La ruta del CRM cargó un MP4 temporal (201), emitió reproducción para un administrador (200), Backblaze entregó rangos de bytes (206) y Chromium reprodujo el video. La lectura sin firma fue rechazada. Se eliminaron el archivo temporal y todas sus versiones. Los metadatos de esta prueba se crearon en SQLite en memoria; no se crearon usuarios, clientes o ventas en producción.
 
 El código de integración está en master. Para activarlo en Easypanel, agregar las cinco variables B2_* del archivo privado verificado, conservar las variables actuales y desplegar el CRM. Las credenciales no están incluidas en el repositorio ni en la imagen Docker.
+
+### Corrección de carga 502 — 21 de octubre de 2026
+
+La migración de cargas directas está aplicada y registrada; RLS activo y acceso `anon`/`authenticated` denegado. El asesor de seguridad no reportó hallazgos. Se cotejaron 178 lotes vendidos y 180 disponibles, sin cambios.
+
+Se probó el frontend compilado en Chromium con un MP4 de 200 MiB contra Backblaze real, usando metadatos y cuentas aisladas en memoria: 25 partes de 8 MiB, error 502 simulado en una parte, renovación de sesión 401 y respuesta 502 perdida después de publicar. La carga se recuperó, quedó un único tutorial y se reprodujo correctamente. Ninguna petición al CRM llevó el contenido del video. El archivo temporal y todas sus versiones se eliminaron al terminar.
+
+Validación: 143 pruebas backend aprobadas, 2 omitidas; 3 pruebas del flujo frontend aprobadas; compilación correcta. La comprobación utiliza la API local actualizada y el bucket real; requiere desplegar este commit para activar el flujo en Easypanel. No requiere nuevas variables de entorno si las cinco B2_* existentes ya están configuradas.

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { uploadTutorial } from './tutorialUpload';
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -78,9 +79,8 @@ export const usersApi = {
 export const tutorialsApi = {
   list: () => api.get('/tutorials'),
   play: id => api.get(`/tutorials/${id}/play`),
-  upload: (data, onUploadProgress) => api.post('/tutorials', data, {
-    headers: { 'Content-Type': 'multipart/form-data' }, timeout: 900000, onUploadProgress,
-  }),
+  upload: (data, onProgress) => uploadTutorial(api, data, onProgress),
+  cancelUpload: id => api.delete(`/tutorials/uploads/${id}`),
 };
 
 // Projects

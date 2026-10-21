@@ -157,3 +157,46 @@ def test_inventory_initialization_preserves_sold_and_rejects_discrepancy():
     catalog['lots'][0]['status']='available'
     with pytest.raises(RuntimeError,match='vendidos difieren'):
         prepare_inventory(projects,lots,catalog)
+
+
+async def test_username_is_editable_normalized_and_does_not_change_login_email(setup):
+    http,_,token,identity,_,_=setup
+    r=await http.put('/api/v1/auth/me',headers={'Authorization':'Bearer '+token},json={'username':'  Admin.RF  '})
+    assert r.status_code==200, r.text
+    assert r.json()['username']=='admin.rf' and r.json()['email']==identity['email']
+    assert r.json()['role']=='ADMIN'
+
+
+@pytest.mark.parametrize('value',['duplicated@example.com','ab','two words',None,'<script>',123])
+async def test_username_rejects_email_and_invalid_values(setup,value):
+    http,_,token,_,_,_=setup
+    r=await http.put('/api/v1/auth/me',headers={'Authorization':'Bearer '+token},json={'username':value})
+    assert r.status_code==422
+
+
+async def test_username_uniqueness_is_case_insensitive(setup):
+    http,sessions,token,_,_,_=setup
+    async with sessions() as db:
+        db.add(User(email='other@example.com',username='Existing',full_name='Other',hashed_password='unused'))
+        await db.commit()
+    r=await http.put('/api/v1/auth/me',headers={'Authorization':'Bearer '+token},json={'username':'EXISTING'})
+    assert r.status_code==409
+    me=await http.get('/api/v1/auth/me',headers={'Authorization':'Bearer '+token})
+    assert me.json()['username']=='admin'
+
+
+async def test_admin_creates_systems_with_separate_username_and_private_role(setup):
+    http,sessions,token,identity,remote,_=setup
+    new_id=str(uuid4())
+    remote.side_effect=[identity, {'id':new_id}]
+    r=await http.post('/api/v1/users',headers={'Authorization':'Bearer '+token},json={
+        'email':'systems@example.com','username':'Sistemas.RF','password':'Local-test-only-123',
+        'full_name':'Equipo de sistemas','role':'SISTEMAS'})
+    assert r.status_code==201, r.text
+    assert r.json()['role']=='SISTEMAS' and r.json()['username']=='sistemas.rf'
+    assert r.json()['email']=='systems@example.com'
+    async with sessions() as db:
+        saved=await db.scalar(select(User).where(User.supabase_auth_id==new_id))
+        assert saved.role==UserRole.SISTEMAS and saved.is_superuser is False
+    # User-editable metadata carries display name, never role authority.
+    assert 'role' not in remote.call_args.kwargs['data'].get('user_metadata',{})

@@ -67,6 +67,12 @@ async def get_current_admin(current_user: User = Depends(get_current_user)) -> U
     return current_user
 
 
+async def get_commercial_user(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role not in (UserRole.ADMIN, UserRole.PROMOTOR):
+        raise HTTPException(403, "Tu cuenta de Sistemas solo tiene acceso a tutoriales y a su perfil.")
+    return current_user
+
+
 def role_required(*allowed_roles: UserRole):
     async def role_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in allowed_roles and not current_user.is_superuser:

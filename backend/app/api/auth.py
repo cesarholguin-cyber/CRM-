@@ -164,10 +164,8 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @router.put("/me", response_model=UserResponse)
 async def update_me(update_data: UserUpdate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     # Personal profile edits must never grant roles or reactivate an account.
-    for field, value in update_data.model_dump(exclude_unset=True, include={'full_name', 'phone'}).items():
-        setattr(current_user, field, value)
-    await db.commit()
-    await db.refresh(current_user)
+    from app.services.user_profile import save_profile
+    await save_profile(db, current_user, update_data.model_dump(exclude_unset=True, include={'full_name', 'phone', 'username'}))
     return UserResponse.model_validate(current_user)
 
 

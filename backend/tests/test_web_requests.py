@@ -55,7 +55,7 @@ def payload(**kw):
 
 async def send(http, data):return await http.post('/api/v1/public/requests',json=data)
 
-def authorize(app):app.dependency_overrides[get_current_user]=lambda:SimpleNamespace(id=1,email='test@example.com')
+def authorize(app):app.dependency_overrides[get_current_user]=lambda:SimpleNamespace(id=1,email='test@example.com',role='ADMIN')
 
 @pytest.mark.asyncio
 async def test_reservation_persists_customer_sale_and_lot(setup):

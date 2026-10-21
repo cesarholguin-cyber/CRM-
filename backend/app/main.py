@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.core.database import engine, Base, async_session_factory
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
-from app.api import auth, users, projects, lots, clients, sales, dashboard, public_routes, admin, web_requests, documents
+from app.api import auth, users, projects, lots, clients, sales, dashboard, public_routes, admin, web_requests, documents, tutorials
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
         from sqlalchemy import select
         from app.models.oracle import SchemaMigration
         async with async_session_factory() as session:
-            marker = "supabase-auth-v2-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
+            marker = "supabase-tutorials-v3-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
             if await session.get(SchemaMigration, marker) is None:
                 raise RuntimeError("Completa y verifica la migración de la base antes de iniciar el CRM.")
     async with engine.begin() as conn:
@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
             await session.execute(sa_text("""
                 DO $$ BEGIN
                     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole_new') THEN
-                        CREATE TYPE userrole_new AS ENUM ('ADMIN', 'PROMOTOR');
+                        CREATE TYPE userrole_new AS ENUM ('ADMIN', 'PROMOTOR', 'SISTEMAS');
                     END IF;
                 END $$;
             """))
@@ -58,13 +58,14 @@ async def lifespan(app: FastAPI):
                     USING CASE
                         WHEN role::text IN ('EMPLOYEE', 'SUPERVISOR') THEN 'PROMOTOR'::userrole_new
                         WHEN role::text = 'ADMIN' THEN 'ADMIN'::userrole_new
+                        WHEN role::text = 'SISTEMAS' THEN 'SISTEMAS'::userrole_new
                         ELSE 'PROMOTOR'::userrole_new
                     END
             """))
             await session.execute(sa_text("DROP TYPE IF EXISTS userrole CASCADE"))
             await session.execute(sa_text("ALTER TYPE userrole_new RENAME TO userrole"))
             await session.commit()
-            logger.info("Enum migrated to ADMIN/PROMOTOR only")
+            logger.info("User roles verified")
 
     # Seed default admin user if none exist
     async with async_session_factory() as session:
@@ -175,6 +176,7 @@ async def health_check():
 
 
 # Include routers
+app.include_router(tutorials.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(projects.router, prefix="/api/v1")

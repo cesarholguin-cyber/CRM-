@@ -9,10 +9,10 @@ from app.models.project import Project, ProjectStatus
 from app.models.lot import Lot, LotStatus
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 from app.schemas.lot import LotResponse
-from app.api.deps import get_current_user, get_current_admin, get_request_info, role_required
+from app.api.deps import get_commercial_user, get_current_user, get_current_admin, get_request_info, role_required
 from app.models.user import UserRole
 
-router = APIRouter(prefix="/projects", tags=["Projects"])
+router = APIRouter(dependencies=[Depends(get_commercial_user)], prefix="/projects", tags=["Projects"])
 
 
 @router.get("", include_in_schema=False, response_model=list[ProjectResponse])

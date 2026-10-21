@@ -7,9 +7,9 @@ from app.core.audit import write_audit_log
 from app.models.project import Project
 from app.models.lot import Lot, LotStatus
 from app.schemas.lot import LotCreate, LotUpdate, LotResponse, LotBulkCreate
-from app.api.deps import get_current_user, get_current_admin, get_request_info
+from app.api.deps import get_commercial_user, get_current_user, get_current_admin, get_request_info
 
-router = APIRouter(prefix="/projects/{project_id}/lots", tags=["Lots"])
+router = APIRouter(dependencies=[Depends(get_commercial_user)], prefix="/projects/{project_id}/lots", tags=["Lots"])
 
 
 async def _get_project(project_id: int, db: AsyncSession) -> Project:

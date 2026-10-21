@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.api.deps import get_current_user, get_request_info
+from app.api.deps import get_commercial_user, get_current_user, get_request_info
 from app.core.audit import write_audit_log
 from app.services.reservation_actions import lock_lot, change_sale_status, recount_project, INACTIVE
 from app.core.database import get_db
@@ -25,7 +25,7 @@ from app.services.project_identity import PLAN_SLUGS, normalize_block, resolve_p
 from app.models.sale import Sale, SaleStatus
 
 public_router = APIRouter(prefix="/public", tags=["Public"])
-router = APIRouter(prefix="/web-requests", tags=["Website requests"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/web-requests", tags=["Website requests"], dependencies=[Depends(get_commercial_user)])
 limiter = Limiter(key_func=get_remote_address)
 
 

@@ -74,6 +74,15 @@ export const usersApi = {
   delete: (id) => api.delete(`/users/${id}`),
 };
 
+// Private tutorial library
+export const tutorialsApi = {
+  list: () => api.get('/tutorials'),
+  play: id => api.get(`/tutorials/${id}/play`),
+  upload: (data, onUploadProgress) => api.post('/tutorials', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }, timeout: 900000, onUploadProgress,
+  }),
+};
+
 // Projects
 export const projectsApi = {
   list: () => api.get('/projects'),

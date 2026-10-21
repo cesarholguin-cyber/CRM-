@@ -46,7 +46,7 @@ async def archive(tmp_path):
         async with sessions() as db:
             yield db
     app.dependency_overrides[get_db] = override_db
-    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=1, email='archive@example.com')
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=1, email='archive@example.com', role='ADMIN')
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as http:
         yield http, sessions, app, engine
     await engine.dispose()

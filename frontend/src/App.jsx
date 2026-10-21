@@ -1,3 +1,5 @@
+import VideosPage from './pages/VideosPage';
+import { homeForRole } from './lib/roles';
 import EnvironmentNotice from './components/EnvironmentNotice';
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -39,7 +41,7 @@ function useApartadosPolling() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.role === 'SISTEMAS') return;
 
     const check = async () => {
       try {
@@ -82,7 +84,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center h-screen bg-rf-cream dark:bg-[#0f1117]"><div className="animate-spin w-10 h-10 border-4 border-rf-green-600 border-t-transparent rounded-full" /></div>;
   if (!user) return <Navigate to="/login" />;
-  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/dashboard" />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to={homeForRole(user?.role)} replace />;
   return children;
 }
 
@@ -91,19 +93,20 @@ function AppRoutes() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginPage />} />
+      <Route path="/login" element={user ? <Navigate to={homeForRole(user?.role)} replace /> : <LoginPage />} />
       <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="/dashboard" />} />
+        <Route index element={<Navigate to={homeForRole(user?.role)} replace />} />
         <Route path="dashboard" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardPage /></ProtectedRoute>} />
-        <Route path="projects" element={<ProjectsPage />} />
-        <Route path="lots" element={<LotsPage />} />
-        <Route path="clients" element={<ClientsPage />} />
-        <Route path="sales" element={<SalesPage />} />
-        <Route path="apartados" element={<ApartadosPage />} />
-        <Route path="reports" element={<ReportsPage />} />
+        <Route path="projects" element={<ProtectedRoute allowedRoles={['ADMIN', 'PROMOTOR']}><ProjectsPage /></ProtectedRoute>} />
+        <Route path="lots" element={<ProtectedRoute allowedRoles={['ADMIN', 'PROMOTOR']}><LotsPage /></ProtectedRoute>} />
+        <Route path="clients" element={<ProtectedRoute allowedRoles={['ADMIN', 'PROMOTOR']}><ClientsPage /></ProtectedRoute>} />
+        <Route path="sales" element={<ProtectedRoute allowedRoles={['ADMIN', 'PROMOTOR']}><SalesPage /></ProtectedRoute>} />
+        <Route path="apartados" element={<ProtectedRoute allowedRoles={['ADMIN', 'PROMOTOR']}><ApartadosPage /></ProtectedRoute>} />
+        <Route path="reports" element={<ProtectedRoute allowedRoles={['ADMIN']}><ReportsPage /></ProtectedRoute>} />
+        <Route path="videos" element={<ProtectedRoute allowedRoles={['ADMIN', 'SISTEMAS']}><VideosPage /></ProtectedRoute>} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" />} />
+      <Route path="*" element={<Navigate to={homeForRole(user?.role)} replace />} />
     </Routes>
   );
 }

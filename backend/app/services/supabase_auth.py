@@ -97,7 +97,7 @@ async def authenticated_user(db, access_token):
 async def create_user(db, data):
     email = str(data.email).strip().lower()
     existing = await db.scalar(select(User.id).where(
-        (func.lower(User.email) == email) | (User.username == data.username)))
+        (func.lower(User.email) == email) | (func.lower(User.username) == data.username.lower())))
     if existing is not None:
         raise HTTPException(409, 'El correo o nombre de usuario ya está registrado.')
     identity = await auth_request('POST', '/admin/users', admin=True, data={

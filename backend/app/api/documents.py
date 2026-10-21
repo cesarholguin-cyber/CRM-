@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import undefer
 
-from app.api.deps import get_current_user, get_request_info
+from app.api.deps import get_commercial_user, get_current_user, get_request_info
 from app.core.audit import AuditLog
 from app.core.config import settings
 from app.core.database import get_db
@@ -28,7 +28,7 @@ from app.models.project import Project
 from app.schemas.sale import SaleResponse
 from app.schemas.client import ClientResponse
 
-router = APIRouter(tags=["Expedientes"])
+router = APIRouter(dependencies=[Depends(get_commercial_user)], tags=["Expedientes"])
 
 
 class DocumentCategory(str, Enum):

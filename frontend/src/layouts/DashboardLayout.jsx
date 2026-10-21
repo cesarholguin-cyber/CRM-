@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { homeForRole, roleLabel } from '../lib/roles';
 import { useTheme } from '../lib/theme';
 import {
   LayoutDashboard, Users, Building2, Map, ShoppingCart, Bookmark,
   BarChart3, Settings, LogOut, PanelLeftClose, PanelLeftOpen, Menu, X,
-  Sun, Moon, Search, ArrowUpRight, ChevronRight, Leaf,
+  Video, Sun, Moon, Search, ArrowUpRight, ChevronRight, Leaf,
 } from 'lucide-react';
 
 const allNavItems = [
@@ -16,7 +17,8 @@ const allNavItems = [
   { icon: ShoppingCart, label: 'Ventas', path: '/sales', roles: ['ADMIN', 'PROMOTOR'], description: 'Operaciones y seguimiento comercial' },
   { icon: Bookmark, label: 'Apartados', path: '/apartados', roles: ['ADMIN', 'PROMOTOR'], description: 'Reservas, citas y consultas de la web' },
   { icon: BarChart3, label: 'Reportes', path: '/reports', roles: ['ADMIN'], description: 'Resultados de tus desarrollos' },
-  { icon: Settings, label: 'Configuración', path: '/settings', roles: ['ADMIN', 'PROMOTOR'], description: 'Tu cuenta y preferencias' },
+  { icon: Video, label: 'Ver videos', path: '/videos', roles: ['ADMIN', 'SISTEMAS'], description: 'Tutoriales para usar la plataforma' },
+  { icon: Settings, label: 'Configuración', path: '/settings', roles: ['ADMIN', 'PROMOTOR', 'SISTEMAS'], description: 'Tu cuenta y preferencias' },
 ];
 
 export default function DashboardLayout() {
@@ -68,12 +70,12 @@ export default function DashboardLayout() {
   }, []);
 
   const navigation = compact => <>
-    <Link to={user?.role === 'ADMIN' ? '/dashboard' : '/projects'} className="crm-brand" onClick={closeMobile} aria-label="R&F, inicio">
+    <Link to={homeForRole(user?.role)} className="crm-brand" onClick={closeMobile} aria-label="R&F, inicio">
       <span className="crm-monogram">R<span>&</span>F</span>
       {!compact && <span><strong>R&F Campestre</strong><small>ESPACIO DE TRABAJO</small></span>}
     </Link>
     <nav className="crm-navigation" aria-label="Navegación principal">
-      {!compact && <p className="crm-nav-label">GESTIÓN COMERCIAL</p>}
+      {!compact && <p className="crm-nav-label">{user?.role === 'SISTEMAS' ? 'CENTRO DE TUTORIALES' : 'GESTIÓN COMERCIAL'}</p>}
       {navItems.map(item => <Link key={item.path} to={item.path} onClick={closeMobile} className="crm-nav-link" title={compact ? item.label : undefined} aria-label={compact ? item.label : undefined} aria-current={location.pathname === item.path ? 'page' : undefined}>
         <item.icon size={19} strokeWidth={1.7}/>{!compact && <><span>{item.label}</span>{location.pathname === item.path && <ChevronRight size={14}/>}</>}
       </Link>)}
@@ -82,7 +84,7 @@ export default function DashboardLayout() {
     <div className="crm-sidebar-footer">
       <Link to="/settings" className="crm-profile" onClick={closeMobile} aria-label="Mi perfil" title={compact ? user?.full_name : undefined}>
         <span className="crm-avatar">{user?.full_name?.charAt(0)}</span>
-        {!compact && <span><strong>{user?.full_name}</strong><small>{user?.role === 'ADMIN' ? 'Administrador' : 'Promotor'}</small></span>}
+        {!compact && <span><strong>{user?.full_name}</strong><small>{roleLabel(user?.role)}</small></span>}
       </Link>
       <button className="crm-logout" onClick={async () => { await logout(); navigate('/login'); }} aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={17}/>{!compact && <span>Cerrar sesión</span>}</button>
     </div>

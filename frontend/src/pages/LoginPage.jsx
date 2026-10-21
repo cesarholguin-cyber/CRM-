@@ -1,3 +1,4 @@
+import { homeForRole } from '../lib/roles';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
@@ -23,8 +24,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password, totpCode || undefined);
-      navigate('/dashboard');
+      const result = await login(email, password, totpCode || undefined);
+      navigate(homeForRole(result.user.role));
     } catch (err) {
       if (err.response?.status === 428) {
         setRequires2FA(true);

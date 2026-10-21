@@ -9,7 +9,7 @@ from app.core.security import get_password_hash
 from app.core.audit import write_audit_log
 from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
-from app.api.deps import get_current_user, get_current_admin, get_request_info
+from app.api.deps import get_commercial_user, get_current_user, get_current_admin, get_request_info
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -67,7 +67,7 @@ async def list_users(
 @router.get("/agents", response_model=list[UserResponse])
 async def list_agents(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_commercial_user),
 ):
     result = await db.execute(
         select(User).where(User.role == UserRole.PROMOTOR).order_by(User.full_name)
@@ -102,10 +102,8 @@ async def update_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     old_values = {field: getattr(user, field) for field in update_data.model_dump(exclude_unset=True).keys()}
-    for field, value in update_data.model_dump(exclude_unset=True).items():
-        setattr(user, field, value)
-    await db.commit()
-    await db.refresh(user)
+    from app.services.user_profile import save_profile
+    await save_profile(db, user, update_data.model_dump(exclude_unset=True))
 
     write_audit_log(
         current_user.id, current_user.email, "USER_UPDATED", "user", user_id,

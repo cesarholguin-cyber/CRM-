@@ -143,3 +143,23 @@ async def test_requires_login_and_handles_missing_video(setup):
         assert (await http.request(method,'/api/v1'+path)).status_code == 401
     assert (await publish(http)).status_code == 401
     sign.assert_not_called();upload.assert_not_called()
+
+
+@pytest.mark.parametrize('size,expected',[(150*1024*1024,201),(200*1024*1024,201),(200*1024*1024+1,413)])
+async def test_large_video_size_boundary(setup,size,expected):
+    # Isolate the size boundary; the storage adapter is mocked, so no large buffers.
+    import io
+    from starlette.datastructures import UploadFile
+    http,sessions,caller,upload,_,_,_=setup
+    file=UploadFile(filename='large.mp4',file=io.BytesIO(MP4),size=size)
+    async with sessions() as db:
+        if expected==413:
+            with pytest.raises(HTTPException) as error:
+                await tutorials.create_tutorial(title='Video largo',description='',file=file,user=caller,db=db)
+            assert error.value.status_code==413 and '200 MB' in error.value.detail
+            upload.assert_not_called()
+            await file.close()
+        else:
+            result=await tutorials.create_tutorial(title='Video largo',description='',file=file,user=caller,db=db)
+            assert result.size_bytes==size
+            assert upload.call_args.args[3]==size

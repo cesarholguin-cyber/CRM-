@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Identity
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Identity, CheckConstraint
 from app.core.database import Base
 
 
 class Tutorial(Base):
     __tablename__ = 'tutorials'
+    __table_args__ = (CheckConstraint('size_bytes > 0 AND size_bytes <= 209715200', name='tutorials_size_bytes_check'),)
     id = Column(Integer, Identity(), primary_key=True)
     title = Column(String(160), nullable=False)
     description = Column(Text, nullable=False, default='')

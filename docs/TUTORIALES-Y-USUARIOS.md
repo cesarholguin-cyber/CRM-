@@ -16,14 +16,14 @@ Los permisos se verifican en el servidor y en la navegación. Sistemas entra dir
 
 1. El administrador crea una cuenta con rol Sistemas, correo y nombre de usuario separados.
 2. Sistemas inicia sesión y abre Ver videos → Subir video.
-3. Escribe un título, una descripción opcional y selecciona un MP4 o WebM de hasta 50 MB. Se recomienda MP4 con video H.264 y audio AAC para compatibilidad con los navegadores.
+3. Escribe un título, una descripción opcional y selecciona un MP4 o WebM de hasta 200 MB. Se recomienda MP4 con video H.264 y audio AAC para compatibilidad con los navegadores.
 4. Al completar la carga, los administradores lo encuentran en Ver videos. Pueden buscar por título o descripción y reproducirlo dentro del CRM.
 
 Los nuevos archivos se guardan en el bucket privado `CRM-Terrenos` de Backblaze B2. La tabla privada `crm.tutorials` conserva solo metadatos; no almacena los videos en PostgreSQL. La reproducción obtiene una dirección firmada de una hora después de verificar la sesión y el rol; no se entrega la clave de servicio. Una dirección firmada ya emitida funciona hasta que vence. El reproductor permite volver a abrir el video si venció o falló la conexión.
 
 ## Despliegue
 
-La migración `20261021190506_crm_tutorials_and_usernames.sql` ya está aplicada. Este cambio de almacenamiento no necesita otra migración. Antes de desplegar, agrega estas variables al servicio del CRM en Easypanel, conservando las variables Supabase existentes:
+La migración `20261021190506_crm_tutorials_and_usernames.sql` ya está aplicada. El límite de 200 MB requiere también `20261021200853_crm_tutorials_200mb.sql`, ya aplicada en este proyecto. Antes de desplegar, agrega estas variables al servicio del CRM en Easypanel, conservando las variables Supabase existentes:
 
 ```dotenv
 B2_ENDPOINT_URL=https://s3.us-east-005.backblazeb2.com
@@ -37,7 +37,7 @@ Las credenciales están excluidas de Git y de la imagen Docker; no se configuran
 
 Los objetos nuevos llevan el prefijo `b2/tutorials/` en su referencia privada; los videos anteriores conservan su referencia a Supabase para seguir reproduciéndose. No se envían cargas nuevas a Supabase ni se cambia de proveedor automáticamente si Backblaze falla. No se modifica el almacenamiento de expedientes de ventas.
 
-La carga usa el servidor del CRM y la reproducción usa enlaces temporales firmados directamente a Backblaze. No hace falta abrir el bucket ni agregar permisos CORS para el reproductor de video normal. El límite del CRM permanece en 50 MB por archivo (es un límite de la aplicación). El servidor envía el archivo desde su archivo temporal, sin cargarlo completo en memoria. Si falla el registro del tutorial, elimina todas las versiones del objeto de ese intento para no consumir espacio por versiones ocultas.
+La carga usa el servidor del CRM y la reproducción usa enlaces temporales firmados directamente a Backblaze. No hace falta abrir el bucket ni agregar permisos CORS para el reproductor de video normal. El límite del CRM es de 200 MB por archivo (es un límite de la aplicación). El servidor envía el archivo desde su archivo temporal, sin cargarlo completo en memoria. Si falla el registro del tutorial, elimina todas las versiones del objeto de ese intento para no consumir espacio por versiones ocultas.
 
 Para instalar en otro entorno:
 

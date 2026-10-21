@@ -54,7 +54,7 @@ async def create_tutorial(title: str = Form(..., min_length=1, max_length=160),
         raise HTTPException(422, "Escribe un título para el tutorial.")
     size = file.size or 0
     if size > storage.MAX_VIDEO_BYTES:
-        raise HTTPException(413, "El video debe pesar como máximo 50 MB.")
+        raise HTTPException(413, "El video debe pesar como máximo 200 MB.")
     if not size:
         raise HTTPException(422, "El archivo está vacío.")
     extension = Path(file.filename or '').suffix.lower()

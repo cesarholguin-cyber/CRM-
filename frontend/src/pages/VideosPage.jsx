@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import { tutorialsApi } from '../lib/api';
 import './VideosPage.css';
 
-const MAX_BYTES = 50 * 1024 * 1024;
+const MAX_BYTES = 200 * 1024 * 1024;
 const errorText = (error, fallback) => typeof error.response?.data?.detail === 'string' ? error.response.data.detail : fallback;
 const normalize = text => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -71,7 +71,7 @@ export default function VideosPage() {
     setMessage(''); setUploadError(''); setFile(null);
     if (!chosen) return;
     if (!/\.(mp4|webm)$/i.test(chosen.name) || chosen.size === 0 || chosen.size > MAX_BYTES) {
-      setUploadError('Selecciona un MP4 o WebM de hasta 50 MB.');
+      setUploadError('Selecciona un MP4 o WebM de hasta 200 MB.');
       e.target.value = ''; return;
     }
     setFile(chosen);
@@ -105,7 +105,7 @@ export default function VideosPage() {
             <label>Título del tutorial<input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ej. Cómo registrar un nuevo cliente" required maxLength={160}/></label>
             <label>Descripción <span>(opcional)</span><textarea className="input" rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Explica brevemente qué aprenderá el equipo." maxLength={2000}/></label>
           </div>
-          <div className="tutorial-file-area"><Film size={32} strokeWidth={1.3}/><label htmlFor="tutorial-file">Selecciona tu video</label><input ref={fileInput} id="tutorial-file" type="file" accept="video/mp4,video/webm,.mp4,.webm" onChange={chooseFile} required aria-describedby="video-format"/><p id="video-format">MP4 o WebM · Máximo 50 MB<br/>Para mayor compatibilidad: MP4, H.264 y AAC.</p>{file && <p className="tutorial-file-name">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</p>}</div>
+          <div className="tutorial-file-area"><Film size={32} strokeWidth={1.3}/><label htmlFor="tutorial-file">Selecciona tu video</label><input ref={fileInput} id="tutorial-file" type="file" accept="video/mp4,video/webm,.mp4,.webm" onChange={chooseFile} required aria-describedby="video-format"/><p id="video-format">MP4 o WebM · Máximo 200 MB<br/>Para mayor compatibilidad: MP4, H.264 y AAC.</p>{file && <p className="tutorial-file-name">{file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB</p>}</div>
         </fieldset>
         {busy && <div className="tutorial-progress" role="status"><progress max="100" value={progress} aria-label="Progreso de carga"/><span>{progress < 100 ? `Subiendo archivo… ${progress}%` : 'Guardando el video… Mantén esta página abierta.'}</span></div>}
         {uploadError && <p className="tutorial-error" role="alert">{uploadError}</p>}

@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from app.core.config import settings
 
 BUCKET = 'crm-tutoriales'
-MAX_VIDEO_BYTES = 50 * 1024 * 1024
+MAX_VIDEO_BYTES = 200 * 1024 * 1024
 SIGNED_URL_SECONDS = 3600
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ async def storage_request(method, path, **kwargs):
         raise HTTPException(503, "No se pudo conectar con los videos. Intenta de nuevo.")
     if response.is_error:
         if response.status_code == 413:
-            raise HTTPException(413, "El video supera el tamaño permitido. Máximo 50 MB.")
+            raise HTTPException(413, "El video supera el tamaño permitido. Máximo 200 MB.")
         logger.warning('Tutorial storage failed: HTTP %s', response.status_code)
         raise HTTPException(503, "No se pudo guardar o abrir el video. Intenta de nuevo.")
     return response.json()

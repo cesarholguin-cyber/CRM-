@@ -55,3 +55,9 @@ La migración convierte los nombres de usuario antiguos que eran correos en iden
 - Carga y reproducción en el almacenamiento privado con un archivo temporal, lectura pública rechazada y limpieza posterior. Las filas temporales se revierten; los 178 lotes vendidos siguen intactos.
 - Escritorio y móvil, tema claro y oscuro, formulario accesible con teclado, publicación y reproductor con API de prueba aislada.
 - Asesor de seguridad Supabase sin hallazgos. Se conserva el SQL ejecutado en una migración creada por CLI; la extracción automática mediante `db pull` requiere el Docker local no disponible en este equipo.
+
+### Validación de Backblaze — 21 de octubre de 2026
+
+Con las credenciales definitivas se verificó el bucket privado CRM-Terrenos. La ruta del CRM cargó un MP4 temporal (201), emitió reproducción para un administrador (200), Backblaze entregó rangos de bytes (206) y Chromium reprodujo el video. La lectura sin firma fue rechazada. Se eliminaron el archivo temporal y todas sus versiones. Los metadatos de esta prueba se crearon en SQLite en memoria; no se crearon usuarios, clientes o ventas en producción.
+
+El código de integración está en master. Para activarlo en Easypanel, agregar las cinco variables B2_* del archivo privado verificado, conservar las variables actuales y desplegar el CRM. Las credenciales no están incluidas en el repositorio ni en la imagen Docker.

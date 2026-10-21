@@ -7,6 +7,8 @@ import io
 import qrcode
 
 from app.core.database import get_db
+from app.core.config import settings
+from app.services import supabase_auth
 from app.core.security import (
     verify_password, get_password_hash,
     create_access_token, create_refresh_token, decode_token,
@@ -29,6 +31,14 @@ LOCKOUT_MINUTES = 15
 
 @router.post("/login", response_model=TokenResponse)
 async def login(request: Request, login_data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    if settings.DATABASE_MODE == 'supabase':
+        tokens = await supabase_auth.sign_in(login_data.email, login_data.password, login_data.totp_code)
+        user = await supabase_auth.authenticated_user(db, tokens['access_token'])
+        user.last_login = datetime.now(timezone.utc)
+        await db.commit()
+        write_audit_log(user.id, user.email, 'LOGIN_SUCCESS', 'user', details=get_request_info(request))
+        return TokenResponse(access_token=tokens['access_token'], refresh_token=tokens['refresh_token'],
+                             user=UserResponse.model_validate(user))
     result = await db.execute(select(User).where(User.email == login_data.email))
     user = result.scalar_one_or_none()
 
@@ -37,6 +47,8 @@ async def login(request: Request, login_data: LoginRequest, db: AsyncSession = D
     if not user:
         write_audit_log(None, None, "LOGIN_FAILED", "user", details={"email": login_data.email, **req_info})
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
 
     # Check lockout
     if user.locked_until and user.locked_until > datetime.now(timezone.utc):
@@ -90,6 +102,13 @@ async def refresh_token(request: Request, db: AsyncSession = Depends(get_db)):
     if not token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token required")
 
+    if settings.DATABASE_MODE == 'supabase':
+        tokens = await supabase_auth.auth_request('POST', '/token?grant_type=refresh_token',
+                                                  data={'refresh_token': token})
+        user = await supabase_auth.authenticated_user(db, tokens['access_token'])
+        return TokenResponse(access_token=tokens['access_token'], refresh_token=tokens['refresh_token'],
+                             user=UserResponse.model_validate(user))
+
     payload = decode_token(token)
     user_id = payload.get("sub")
     if not user_id or payload.get("type") != "refresh":
@@ -113,6 +132,8 @@ async def register(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_admin),
 ):
+    if settings.DATABASE_MODE == 'supabase':
+        return UserResponse.model_validate(await supabase_auth.create_user(db, user_data))
     # Check existing
     result = await db.execute(select(User).where(
         (User.email == user_data.email) | (User.username == user_data.username)
@@ -142,7 +163,8 @@ async def get_me(current_user: User = Depends(get_current_user)):
 
 @router.put("/me", response_model=UserResponse)
 async def update_me(update_data: UserUpdate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    for field, value in update_data.model_dump(exclude_unset=True).items():
+    # Personal profile edits must never grant roles or reactivate an account.
+    for field, value in update_data.model_dump(exclude_unset=True, include={'full_name', 'phone'}).items():
         setattr(current_user, field, value)
     await db.commit()
     await db.refresh(current_user)
@@ -156,6 +178,19 @@ async def change_password(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if settings.DATABASE_MODE == 'supabase':
+        # The request already has a verified session (and aal2 if MFA is enabled).
+        tokens = await supabase_auth.auth_request('POST', '/token?grant_type=password',
+            data={'email': current_user.email, 'password': data.current_password})
+        if tokens['user']['id'] != current_user.supabase_auth_id:
+            raise HTTPException(401, 'Sesión inválida.')
+        await supabase_auth.auth_request('POST', '/logout?scope=local', token=tokens['access_token'])
+        bearer = request.headers.get('authorization', '').removeprefix('Bearer ')
+        await supabase_auth.auth_request('PUT', '/user', token=bearer, data={'password': data.new_password})
+        current_user.password_changed_at = datetime.now(timezone.utc)
+        current_user.must_change_password = False
+        await db.commit()
+        return {'message': 'Contraseña actualizada en Supabase.'}
     if not verify_password(data.current_password, current_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
 
@@ -170,6 +205,8 @@ async def change_password(
 
 @router.post("/setup-2fa", response_model=Setup2FAResponse)
 async def setup_2fa(current_user: User = Depends(get_current_user)):
+    if settings.DATABASE_MODE == 'supabase':
+        raise HTTPException(409, 'Configura la autenticación de dos pasos en Supabase Auth.')
     secret = generate_totp_secret()
     uri = get_totp_uri(secret, current_user.email)
 
@@ -188,6 +225,8 @@ async def verify_2fa(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    if settings.DATABASE_MODE == 'supabase':
+        raise HTTPException(409, 'La autenticación de dos pasos se gestiona en Supabase Auth.')
     # This should be called after /setup-2fa to confirm
     # In practice, we need the secret stored temporarily. For simplicity:
     if verify_totp(current_user.totp_secret or "", data.code):
@@ -199,7 +238,18 @@ async def verify_2fa(
 
 @router.post("/disable-2fa")
 async def disable_2fa(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if settings.DATABASE_MODE == 'supabase':
+        raise HTTPException(409, 'La autenticación de dos pasos se gestiona en Supabase Auth.')
     current_user.totp_enabled = False
     current_user.totp_secret = None
     await db.commit()
     return {"message": "2FA disabled"}
+
+
+@router.post('/logout')
+async def logout(request: Request):
+    if settings.DATABASE_MODE == 'supabase':
+        token = request.headers.get('authorization', '').removeprefix('Bearer ')
+        if token:
+            await supabase_auth.auth_request('POST', '/logout?scope=local', token=token)
+    return {'message': 'Sesión cerrada.'}

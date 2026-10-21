@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import get_db
+from app.core.config import settings
+from app.services import supabase_auth
 from app.core.security import get_password_hash
 from app.core.audit import write_audit_log
 from app.models.user import User, UserRole
@@ -20,6 +22,11 @@ async def create_user(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_admin),
 ):
+    if settings.DATABASE_MODE == 'supabase':
+        user = await supabase_auth.create_user(db, user_data)
+        write_audit_log(current_user.id, current_user.email, 'USER_CREATED', 'user', user.id,
+                        new_values={'email': user.email, 'role': user.role.value}, **get_request_info(request))
+        return UserResponse.model_validate(user)
     existing = await db.execute(
         select(User).where((User.email == user_data.email) | (User.username == user_data.username))
     )

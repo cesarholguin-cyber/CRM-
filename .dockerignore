@@ -36,3 +36,10 @@ Wallet*/
 *.db-shm
 *.sqlite*
 .env.oracle
+.env.supabase.local
+supabase/.temp/
+backend/app/data/demo-bootstrap.json
+backend/app/data/deployment-access.json
+backend/.env
+backend/.env.supabase.local
+**/*.db

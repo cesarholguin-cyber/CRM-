@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
         from sqlalchemy import select
         from app.models.oracle import SchemaMigration
         async with async_session_factory() as session:
-            marker = "supabase-v1-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
+            marker = "supabase-auth-v2-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
             if await session.get(SchemaMigration, marker) is None:
                 raise RuntimeError("Completa y verifica la migración de la base antes de iniciar el CRM.")
     async with engine.begin() as conn:
@@ -168,7 +168,10 @@ async def log_requests(request: Request, call_next):
 # Health check
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "app": settings.APP_NAME, "version": settings.VERSION, "database_mode": settings.DATABASE_MODE, "integration_version": "landing-requests-v1"}
+    return {"status": "healthy", "app": settings.APP_NAME, "version": settings.VERSION,
+            "database_mode": settings.DATABASE_MODE,
+            "auth_provider": "supabase" if settings.DATABASE_MODE == "supabase" else "local",
+            "integration_version": "landing-requests-v1"}
 
 
 # Include routers

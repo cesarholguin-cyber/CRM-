@@ -13,7 +13,8 @@ from scripts.migrate_to_supabase import inspect_source, copy_rows, verify, norma
 def test_supabase_engines_share_private_schema_and_require_session_key():
     values = dict(_env_file=None, DATABASE_MODE='supabase',
                   DATABASE_URL='postgresql://postgres.example:test@localhost:5432/postgres',
-                  DATABASE_URL_SYNC='postgresql://wrong:wrong@elsewhere/other', SECRET_KEY='x'*40)
+                  DATABASE_URL_SYNC='postgresql://wrong:wrong@elsewhere/other', SECRET_KEY='x'*40,
+                  SUPABASE_URL='https://example.supabase.co', SUPABASE_PUBLISHABLE_KEY='test-key')
     config = Settings(**values)
     assert config.DATABASE_URL == config.DATABASE_URL_SYNC
     assert config.DATABASE_URL.startswith('postgresql+psycopg://')

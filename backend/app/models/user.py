@@ -19,6 +19,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
+    supabase_auth_id = Column(String(36), unique=True, nullable=True)
     full_name = Column(String(255), nullable=False)
     phone = Column(String(50), nullable=True)
     role = Column(SAEnum(UserRole), default=UserRole.PROMOTOR, nullable=False)

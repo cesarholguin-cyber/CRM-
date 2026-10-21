@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     DEBUG: bool = False
 
-    DATABASE_MODE: Literal["embedded", "external", "oracle", "supabase"] = "embedded"
+    DATABASE_MODE: Literal["embedded", "external", "oracle", "supabase"] = "supabase"
     ORACLE_USER: str = ""
     ORACLE_PASSWORD: str = ""
     ORACLE_DSN: str = ""
@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # Database — Render provides DATABASE_URL in sync format; we auto-convert
     DATABASE_URL: str = ""
     DATABASE_URL_SYNC: str = ""
+    SUPABASE_URL: str = ""
+    SUPABASE_PUBLISHABLE_KEY: str = ""
+    SUPABASE_SECRET_KEY: str = ""
 
     # Security - JWT
     SECRET_KEY: str = "change-me-in-production"
@@ -107,6 +110,12 @@ class Settings(BaseSettings):
         if self.DOCUMENT_STORAGE == "oci" and not all((self.OCI_NAMESPACE, self.OCI_BUCKET)):
             raise ValueError("Configura OCI_NAMESPACE y OCI_BUCKET antes de activar el bucket.")
         if self.DATABASE_MODE == "supabase":
+            from urllib.parse import urlparse
+            endpoint = urlparse(self.SUPABASE_URL)
+            if endpoint.scheme != 'https' or not endpoint.hostname or endpoint.path not in ('', '/'):
+                raise ValueError("Configura SUPABASE_URL con la dirección HTTPS del proyecto.")
+            if not self.SUPABASE_PUBLISHABLE_KEY:
+                raise ValueError("Configura SUPABASE_PUBLISHABLE_KEY para el acceso del CRM.")
             if not self.DATABASE_URL.startswith(("postgresql://", "postgresql+psycopg://")):
                 raise ValueError("Configura la conexión PostgreSQL antes de activar Supabase.")
             if len(self.SECRET_KEY) < 32 or self.SECRET_KEY == "change-me-in-production":

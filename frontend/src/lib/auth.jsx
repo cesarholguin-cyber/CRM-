@@ -30,9 +30,16 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
-  const logout = () => {
-    localStorage.clear();
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Clear this browser's credentials even if the server is unreachable.
+    } finally {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      setUser(null);
+    }
   };
 
   return (

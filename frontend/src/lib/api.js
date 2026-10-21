@@ -17,17 +17,27 @@ api.interceptors.request.use((config) => {
 });
 
 // Response interceptor for token refresh
+let refreshPromise = null;
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry &&
+        !['/auth/login', '/auth/refresh', '/auth/logout'].includes(originalRequest.url)) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refresh_token');
-        const res = await axios.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
-        localStorage.setItem('access_token', res.data.access_token);
-        localStorage.setItem('refresh_token', res.data.refresh_token);
+        if (!refreshToken) throw new Error('No active session');
+        // Supabase rotates refresh tokens. Concurrent API calls share one refresh.
+        if (!refreshPromise) {
+          refreshPromise = axios.post('/api/v1/auth/refresh', { refresh_token: refreshToken })
+            .then((res) => {
+              localStorage.setItem('access_token', res.data.access_token);
+              localStorage.setItem('refresh_token', res.data.refresh_token);
+              return res;
+            }).finally(() => { refreshPromise = null; });
+        }
+        const res = await refreshPromise;
         originalRequest.headers.Authorization = `Bearer ${res.data.access_token}`;
         return api(originalRequest);
       } catch {
@@ -44,6 +54,7 @@ export default api;
 // Auth
 export const authApi = {
   login: (data) => api.post('/auth/login', data),
+  logout: () => api.post('/auth/logout'),
   register: (data) => api.post('/auth/register', data),
   me: () => api.get('/auth/me'),
   updateMe: (data) => api.put('/auth/me', data),

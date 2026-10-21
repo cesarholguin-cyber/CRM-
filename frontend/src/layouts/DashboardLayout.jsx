@@ -84,7 +84,7 @@ export default function DashboardLayout() {
         <span className="crm-avatar">{user?.full_name?.charAt(0)}</span>
         {!compact && <span><strong>{user?.full_name}</strong><small>{user?.role === 'ADMIN' ? 'Administrador' : 'Promotor'}</small></span>}
       </Link>
-      <button className="crm-logout" onClick={() => { logout(); navigate('/login'); }} aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={17}/>{!compact && <span>Cerrar sesión</span>}</button>
+      <button className="crm-logout" onClick={async () => { await logout(); navigate('/login'); }} aria-label="Cerrar sesión" title="Cerrar sesión"><LogOut size={17}/>{!compact && <span>Cerrar sesión</span>}</button>
     </div>
   </>;
 

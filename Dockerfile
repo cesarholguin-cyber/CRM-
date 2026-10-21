@@ -14,6 +14,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Production must never silently start a new SQLite demo database.
+ENV DATABASE_MODE=supabase
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \

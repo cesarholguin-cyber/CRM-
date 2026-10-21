@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
 from pydantic import BaseModel
 import logging
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.lot import Lot, LotStatus
 from app.models.sale import Sale, SaleStatus, PaymentPlan, Payment
 from app.models.client import Client, ClientInteraction
@@ -64,6 +65,8 @@ async def reset_lots(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_admin),
 ):
+    if settings.DATABASE_MODE != 'embedded':
+        raise HTTPException(403, 'El reinicio de datos de prueba está deshabilitado en la base definitiva.')
     try:
         result = await db.execute(select(func.count(Sale.id)))
         sales_deleted = result.scalar() or 0

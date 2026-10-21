@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.config import settings
 from app.models.user import User, UserRole
 
 security = HTTPBearer(auto_error=False)
@@ -23,6 +24,10 @@ async def get_current_user(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    if settings.DATABASE_MODE == 'supabase':
+        from app.services.supabase_auth import authenticated_user
+        return await authenticated_user(db, credentials.credentials)
 
     payload = decode_token(credentials.credentials)
     user_id = payload.get("sub")

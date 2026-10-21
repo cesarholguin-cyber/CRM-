@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Video, Play, UploadCloud, Search, X, CheckCircle2, Film } from 'lucide-react';
+import { Video, Play, UploadCloud, Search, X, CheckCircle2, Film, Trash2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { tutorialsApi } from '../lib/api';
 import { tutorialUploadError } from '../lib/tutorialUpload';
+import DeleteTutorialDialog from '../components/DeleteTutorialDialog';
 import './VideosPage.css';
 
 const MAX_BYTES = 200 * 1024 * 1024;
@@ -38,11 +39,15 @@ function Player({ tutorial, onClose }) {
 export default function VideosPage() {
   const { user } = useAuth();
   const canUpload = user?.role === 'SISTEMAS';
+  const canDelete = canUpload || user?.role === 'ADMIN';
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
+  const [deleteVideo, setDeleteVideo] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState('');
+  const libraryHeading = useRef(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState(null);
@@ -124,12 +129,20 @@ export default function VideosPage() {
       </form>
     </section>}
     <section aria-labelledby="library-title">
-      <div className="tutorial-library-heading"><div><h2 id="library-title">Ver videos</h2><p>{videos.length} {videos.length === 1 ? 'tutorial disponible' : 'tutoriales disponibles'}</p></div><label className="tutorial-search"><Search size={18}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar un tutorial" aria-label="Buscar un tutorial"/></label></div>
-      {loading ? <div className="card tutorial-empty" role="status">Cargando tutoriales…</div> : loadError ? <div className="card tutorial-empty" role="alert"><p>{loadError}</p><button className="btn-secondary" onClick={load}>Reintentar</button></div> : !visible.length ? <div className="card tutorial-empty"><Video size={35} strokeWidth={1.2}/><h3>{query ? 'Sin coincidencias' : 'Pronto, más formas de aprender'}</h3><p>{query ? 'Prueba con otro nombre o tema.' : canUpload ? 'Sube el primer tutorial para tu equipo.' : 'Aquí aparecerán los tutoriales que publique Sistemas.'}</p></div> : <div className="tutorial-grid">{visible.map((video, index) => <button key={video.id} className="card tutorial-card" onClick={() => setSelected(video)} aria-label={`Ver ${video.title}`}>
+      <div className="tutorial-library-heading"><div><h2 id="library-title" ref={libraryHeading} tabIndex={-1}>Ver videos</h2><p>{videos.length} {videos.length === 1 ? 'tutorial disponible' : 'tutoriales disponibles'}</p></div><label className="tutorial-search"><Search size={18}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar un tutorial" aria-label="Buscar un tutorial"/></label></div>
+      {deleteMessage && <p className="tutorial-success tutorial-delete-feedback" role="status"><CheckCircle2 size={18}/>{deleteMessage}</p>}
+      {loading ? <div className="card tutorial-empty" role="status">Cargando tutoriales…</div> : loadError ? <div className="card tutorial-empty" role="alert"><p>{loadError}</p><button className="btn-secondary" onClick={load}>Reintentar</button></div> : !visible.length ? <div className="card tutorial-empty"><Video size={35} strokeWidth={1.2}/><h3>{query ? 'Sin coincidencias' : 'Pronto, más formas de aprender'}</h3><p>{query ? 'Prueba con otro nombre o tema.' : canUpload ? 'Sube el primer tutorial para tu equipo.' : 'Aquí aparecerán los tutoriales que publique Sistemas.'}</p></div> : <div className="tutorial-grid">{visible.map((video, index) => <article key={video.id} className="card tutorial-card"><button type="button" className="tutorial-card-open" onClick={() => setSelected(video)} aria-label={`Ver ${video.title}`}>
         <div className={`tutorial-cover tutorial-cover-${index % 3}`}><span className="tutorial-cover-brand">R&F <span>APRENDE</span></span><span className="tutorial-play"><Play size={25} fill="currentColor"/></span><span className="tutorial-cover-caption">GUÍA DE LA PLATAFORMA</span></div>
         <div className="tutorial-card-body"><span className="tutorial-date">{new Date(video.created_at).toLocaleDateString('es-MX', {day:'numeric', month:'long', year:'numeric'})}</span><h3>{video.title}</h3><p>{video.description || 'Abre el video para seguir el tutorial.'}</p><span className="tutorial-card-link">Ver tutorial <Play size={13}/></span></div>
-      </button>)}</div>}
+      </button>{canDelete && <div className="tutorial-card-actions"><button type="button" className="client-delete-trigger" aria-label={`Eliminar video: ${video.title}`} onClick={() => { setDeleteMessage(''); setDeleteVideo(video); }}><Trash2 size={16} aria-hidden="true"/>Eliminar video</button></div>}</article>)}</div>}
     </section>
     {selected && <Player key={selected.id} tutorial={selected} onClose={() => setSelected(null)}/>}
+    {deleteVideo && <DeleteTutorialDialog key={deleteVideo.id} tutorial={deleteVideo} onClose={() => setDeleteVideo(null)} onDeleted={id => {
+      setVideos(items => items.filter(video => video.id !== id));
+      setDeleteVideo(null);
+      if (selected?.id === id) setSelected(null);
+      setDeleteMessage('Video eliminado. Ya no está disponible en la biblioteca.');
+      requestAnimationFrame(() => libraryHeading.current?.focus());
+    }}/>}
   </div>;
 }

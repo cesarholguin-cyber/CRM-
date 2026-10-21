@@ -19,6 +19,12 @@ Los permisos se verifican en el servidor y en la navegación. Sistemas entra dir
 3. Escribe un título, una descripción opcional y selecciona un MP4 o WebM de hasta 200 MB. Se recomienda MP4 con video H.264 y audio AAC para compatibilidad con los navegadores.
 4. Al completar la carga, los administradores lo encuentran en Ver videos. Pueden buscar por título o descripción y reproducirlo dentro del CRM.
 
+### Eliminar un video
+
+Administración y Sistemas tienen un botón **Eliminar video** separado del reproductor en cada tarjeta. La ventana muestra el título, advierte que la acción no se puede deshacer y requiere marcar la casilla para habilitar el botón final. Cancelar o pulsar Escape no elimina nada. El servidor también exige `confirmed=true` y verifica el rol; Promotor no puede eliminar tutoriales.
+
+Al confirmar se elimina el objeto del almacenamiento (todas las versiones de esa clave en Backblaze, o el archivo de Supabase si es un tutorial antiguo), el registro de la biblioteca y se deja auditoría de la acción. Las sesiones de carga vinculadas quedan retiradas para que un reintento anterior no vuelva a publicar el video. Si el proveedor falla, se conserva el registro para reintentar y la ventana exige marcar otra vez la casilla. No se requiere una migración ni nuevas variables para este botón.
+
 Los nuevos archivos se guardan en el bucket privado `CRM-Terrenos` de Backblaze B2. La tabla privada `crm.tutorials` conserva solo metadatos; no almacena los videos en PostgreSQL. La reproducción obtiene una dirección firmada de una hora después de verificar la sesión y el rol; no se entrega la clave de servicio. Una dirección firmada ya emitida funciona hasta que vence. El reproductor permite volver a abrir el video si venció o falló la conexión.
 
 ## Despliegue

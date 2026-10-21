@@ -2,12 +2,13 @@ import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import UUID
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Response
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Response, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_request_info
+from app.core.audit import AuditLog
 from app.core.database import get_db
 from app.models.user import UserRole
 from app.models.tutorial import Tutorial, TutorialUpload
@@ -188,3 +189,31 @@ async def play_tutorial(tutorial_id: int, response: Response,
         raise HTTPException(404, "No se encontró este tutorial.")
     response.headers['Cache-Control'] = 'no-store'
     return {'url': await storage.signed_video_url(video.object_path), 'expires_in': storage.SIGNED_URL_SECONDS}
+
+
+@router.delete('/{tutorial_id}', status_code=204)
+async def delete_tutorial(tutorial_id: int, request: Request, confirmed: bool = Query(False),
+                          user=Depends(tutorial_viewer), db: AsyncSession = Depends(get_db)):
+    if not confirmed:
+        raise HTTPException(422, 'Marca la casilla de confirmación para eliminar el video.')
+    # Match completion's lock order. Retire its idempotency key so retries cannot
+    # recreate a deleted video or try to serialize a missing tutorial.
+    uploads = (await db.scalars(select(TutorialUpload).where(
+        TutorialUpload.tutorial_id == tutorial_id).order_by(TutorialUpload.id)
+        .with_for_update())).all()
+    video = await db.scalar(select(Tutorial).where(Tutorial.id == tutorial_id).with_for_update())
+    if video is None:
+        return  # A lost DELETE response is safe to retry.
+    # Delete storage first; on provider failure keep the metadata for retry.
+    # B2 removal includes all versions of this exact key, legacy storage is routed.
+    await storage.remove_video(video.object_path)
+    for upload in uploads:
+        upload.state = 'aborted'
+        upload.tutorial_id = None
+        upload.storage_upload_id = None
+    await db.flush()
+    await db.delete(video)
+    db.add(AuditLog(user_id=user.id, username=user.email, action='TUTORIAL_DELETED',
+                    entity_type='tutorial', entity_id=tutorial_id,
+                    details={'confirmed': True, 'title': video.title}, **get_request_info(request)))
+    await db.commit()

@@ -81,6 +81,7 @@ export const tutorialsApi = {
   play: id => api.get(`/tutorials/${id}/play`),
   upload: (data, onProgress) => uploadTutorial(api, data, onProgress),
   cancelUpload: id => api.delete(`/tutorials/uploads/${id}`),
+  delete: (id, confirmed) => api.delete(`/tutorials/${id}`, { params: { confirmed } }),
 };
 
 // Projects

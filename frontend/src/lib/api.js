@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { uploadTutorial } from './tutorialUpload';
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -73,15 +72,6 @@ export const usersApi = {
   create: (data) => api.post('/users', data),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
-};
-
-// Private tutorial library
-export const tutorialsApi = {
-  list: () => api.get('/tutorials'),
-  play: id => api.get(`/tutorials/${id}/play`),
-  upload: (data, onProgress) => uploadTutorial(api, data, onProgress),
-  cancelUpload: id => api.delete(`/tutorials/uploads/${id}`),
-  delete: (id, confirmed) => api.delete(`/tutorials/${id}`, { params: { confirmed } }),
 };
 
 // Projects

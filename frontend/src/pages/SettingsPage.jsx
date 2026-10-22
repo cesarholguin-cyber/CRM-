@@ -119,14 +119,13 @@ export default function SettingsPage() {
   const roleBadge = (role) => {
     const styles = {
       ADMIN: 'bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800/50',
-      SISTEMAS: 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800/50',
       PROMOTOR: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800/50',
     };
     return styles[role] || 'bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-600/50';
   };
 
   const roleLabel = (role) => {
-    const labels = { ADMIN: 'Administrador', PROMOTOR: 'Promotor', SISTEMAS: 'Sistemas' };
+    const labels = { ADMIN: 'Administrador', PROMOTOR: 'Promotor' };
     return labels[role] || role;
   };
 
@@ -288,7 +287,7 @@ export default function SettingsPage() {
                     </label>
                     <label className="block text-sm text-rf-dark dark:text-gray-200">Nombre de usuario
                       <input type="text" autoComplete="off" minLength={3} maxLength={100} pattern="[a-z0-9][a-z0-9._\-]{2,99}" value={createForm.username} onChange={(e) => setCreateForm({...createForm, username: e.target.value.toLowerCase()})} className="input mt-1" required />
-                      <span className="block text-xs text-rf-gray dark:text-gray-400 mt-1">Ejemplo: sistemas.rf. Sin @ ni espacios.</span>
+                      <span className="block text-xs text-rf-gray dark:text-gray-400 mt-1">Ejemplo: asesor.rf. Sin @ ni espacios.</span>
                     </label>
                     <label className="block text-sm text-rf-dark dark:text-gray-200">Contraseña
                       <input type="password" autoComplete="new-password" minLength={8} value={createForm.password} onChange={(e) => setCreateForm({...createForm, password: e.target.value})} className="input mt-1" required />
@@ -301,7 +300,6 @@ export default function SettingsPage() {
                     <select id="new-user-role" value={createForm.role} onChange={(e) => setCreateForm({...createForm, role: e.target.value})} className="input">
                       <option value="PROMOTOR">Promotor</option>
                       <option value="ADMIN">Administrador</option>
-                      <option value="SISTEMAS">Sistemas — subir tutoriales</option>
                     </select>
                     <div className="flex gap-3 pt-2">
                       <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary flex-1">Cancelar</button>

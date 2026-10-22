@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.core.database import engine, Base, async_session_factory
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
-from app.api import auth, users, projects, lots, clients, sales, dashboard, public_routes, admin, web_requests, documents, tutorials
+from app.api import auth, users, projects, lots, clients, sales, dashboard, public_routes, admin, web_requests, documents
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
         from sqlalchemy import select
         from app.models.oracle import SchemaMigration
         async with async_session_factory() as session:
-            marker = "supabase-tutorials-v4-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
+            marker = "supabase-commercial-v5-ready" if settings.DATABASE_MODE == "supabase" else "oracle-v1-ready"
             if await session.get(SchemaMigration, marker) is None:
                 raise RuntimeError("Completa y verifica la migración de la base antes de iniciar el CRM.")
     async with engine.begin() as conn:
@@ -39,6 +39,10 @@ async def lifespan(app: FastAPI):
             await conn.run_sync(Base.metadata.create_all)
             from app.core.reservation_schema import ensure_reservation_history
             await ensure_reservation_history(conn)
+    if settings.DATABASE_MODE not in ("oracle", "supabase"):
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("DELETE FROM users WHERE role = 'SISTEMAS'"))
     logger.info("Database tables created/verified")
 
     if engine.dialect.name == "postgresql" and settings.DATABASE_MODE != "supabase":
@@ -49,7 +53,7 @@ async def lifespan(app: FastAPI):
             await session.execute(sa_text("""
                 DO $$ BEGIN
                     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole_new') THEN
-                        CREATE TYPE userrole_new AS ENUM ('ADMIN', 'PROMOTOR', 'SISTEMAS');
+                        CREATE TYPE userrole_new AS ENUM ('ADMIN', 'PROMOTOR');
                     END IF;
                 END $$;
             """))
@@ -58,7 +62,6 @@ async def lifespan(app: FastAPI):
                     USING CASE
                         WHEN role::text IN ('EMPLOYEE', 'SUPERVISOR') THEN 'PROMOTOR'::userrole_new
                         WHEN role::text = 'ADMIN' THEN 'ADMIN'::userrole_new
-                        WHEN role::text = 'SISTEMAS' THEN 'SISTEMAS'::userrole_new
                         ELSE 'PROMOTOR'::userrole_new
                     END
             """))
@@ -176,7 +179,6 @@ async def health_check():
 
 
 # Include routers
-app.include_router(tutorials.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(projects.router, prefix="/api/v1")

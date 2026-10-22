@@ -69,7 +69,7 @@ async def get_current_admin(current_user: User = Depends(get_current_user)) -> U
 
 async def get_commercial_user(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role not in (UserRole.ADMIN, UserRole.PROMOTOR):
-        raise HTTPException(403, "Tu cuenta de Sistemas solo tiene acceso a tutoriales y a su perfil.")
+        raise HTTPException(403, "Tu cuenta no tiene acceso a la gestión comercial.")
     return current_user
 
 

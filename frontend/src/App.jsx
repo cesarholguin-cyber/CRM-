@@ -1,4 +1,3 @@
-import VideosPage from './pages/VideosPage';
 import { homeForRole } from './lib/roles';
 import EnvironmentNotice from './components/EnvironmentNotice';
 import { useState, useEffect, useRef } from 'react';
@@ -41,7 +40,7 @@ function useApartadosPolling() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user || user.role === 'SISTEMAS') return;
+    if (!user || !['ADMIN', 'PROMOTOR'].includes(user.role)) return;
 
     const check = async () => {
       try {
@@ -84,6 +83,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center h-screen bg-rf-cream dark:bg-[#0f1117]"><div className="animate-spin w-10 h-10 border-4 border-rf-green-600 border-t-transparent rounded-full" /></div>;
   if (!user) return <Navigate to="/login" />;
+  if (!['ADMIN', 'PROMOTOR'].includes(user.role)) return <LoginPage />;
   if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to={homeForRole(user?.role)} replace />;
   return children;
 }
@@ -103,7 +103,6 @@ function AppRoutes() {
         <Route path="sales" element={<ProtectedRoute allowedRoles={['ADMIN', 'PROMOTOR']}><SalesPage /></ProtectedRoute>} />
         <Route path="apartados" element={<ProtectedRoute allowedRoles={['ADMIN', 'PROMOTOR']}><ApartadosPage /></ProtectedRoute>} />
         <Route path="reports" element={<ProtectedRoute allowedRoles={['ADMIN']}><ReportsPage /></ProtectedRoute>} />
-        <Route path="videos" element={<ProtectedRoute allowedRoles={['ADMIN', 'SISTEMAS']}><VideosPage /></ProtectedRoute>} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to={homeForRole(user?.role)} replace />} />

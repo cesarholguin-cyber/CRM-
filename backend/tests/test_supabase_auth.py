@@ -185,18 +185,38 @@ async def test_username_uniqueness_is_case_insensitive(setup):
     assert me.json()['username']=='admin'
 
 
-async def test_admin_creates_systems_with_separate_username_and_private_role(setup):
+async def test_admin_creates_promoter_with_separate_username_and_private_role(setup):
     http,sessions,token,identity,remote,_=setup
     new_id=str(uuid4())
     remote.side_effect=[identity, {'id':new_id}]
     r=await http.post('/api/v1/users',headers={'Authorization':'Bearer '+token},json={
-        'email':'systems@example.com','username':'Sistemas.RF','password':'Local-test-only-123',
-        'full_name':'Equipo de sistemas','role':'SISTEMAS'})
+        'email':'agent@example.com','username':'Asesor.RF','password':'Local-test-only-123',
+        'full_name':'Asesor','role':'PROMOTOR'})
     assert r.status_code==201, r.text
-    assert r.json()['role']=='SISTEMAS' and r.json()['username']=='sistemas.rf'
-    assert r.json()['email']=='systems@example.com'
+    assert r.json()['role']=='PROMOTOR' and r.json()['username']=='asesor.rf'
+    assert r.json()['email']=='agent@example.com'
     async with sessions() as db:
         saved=await db.scalar(select(User).where(User.supabase_auth_id==new_id))
-        assert saved.role==UserRole.SISTEMAS and saved.is_superuser is False
+        assert saved.role==UserRole.PROMOTOR and saved.is_superuser is False
     # User-editable metadata carries display name, never role authority.
     assert 'role' not in remote.call_args.kwargs['data'].get('user_metadata',{})
+
+
+@pytest.mark.parametrize('endpoint', ['/api/v1/users', '/api/v1/auth/register'])
+async def test_retired_systems_role_cannot_be_created(setup, endpoint):
+    http, sessions, token, identity, remote, _ = setup
+    remote.return_value = identity
+    r = await http.post(endpoint, headers={'Authorization': 'Bearer ' + token}, json={
+        'email': 'retired@example.com', 'username': 'retired',
+        'password': 'Local-test-only-123', 'full_name': 'Retired role', 'role': 'SISTEMAS'})
+    assert r.status_code == 422
+    assert not any('/admin/users' in str(call) for call in remote.call_args_list)
+    async with sessions() as db:
+        assert await db.scalar(select(User.id).where(User.username == 'retired')) is None
+
+
+async def test_retired_systems_role_cannot_be_assigned(setup):
+    http, _, token, _, _, _ = setup
+    r = await http.put('/api/v1/users/1', headers={'Authorization': 'Bearer ' + token},
+                       json={'role': 'SISTEMAS'})
+    assert r.status_code == 422

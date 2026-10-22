@@ -10,7 +10,6 @@ import enum
 class UserRole(str, enum.Enum):
     ADMIN = "ADMIN"
     PROMOTOR = "PROMOTOR"
-    SISTEMAS = "SISTEMAS"
 
 
 class User(Base):

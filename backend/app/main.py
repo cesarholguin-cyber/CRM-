@@ -131,6 +131,10 @@ cors_origins = settings.cors_origins_list
 # Keep the deployed landing domains even when Easypanel supplies an older
 # CORS_ORIGINS value. Explicit origins only; no wildcard or suffix matching.
 for origin in (
+    "https://maculisur.com.mx",
+    "https://www.maculisur.com.mx",
+    "http://127.0.0.1:4176",
+    "http://localhost:4176",
     "https://eltriunfo.mx",
     "https://www.eltriunfo.mx",
     "http://127.0.0.1:4173",

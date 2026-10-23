@@ -23,6 +23,7 @@ from app.models.client import Client, ClientInteraction, ClientStatus
 from app.models.lot import Lot, LotStatus
 from app.services.project_identity import PLAN_SLUGS, normalize_block, resolve_public_project
 from app.models.sale import Sale, SaleStatus
+from app.services.maculi import SLUG as MACULI_SLUG, quote as maculi_quote
 
 public_router = APIRouter(prefix="/public", tags=["Public"])
 router = APIRouter(prefix="/web-requests", tags=["Website requests"], dependencies=[Depends(get_commercial_user)])
@@ -33,7 +34,7 @@ class WebsiteRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     request_id: UUID
     kind: Literal['reservation', 'visit', 'information']
-    project_slug: Literal['floresta-campestre', 'campestre-el-triunfo']
+    project_slug: Literal['floresta-campestre', 'campestre-el-triunfo', 'maculi-sur']
     block: str | None = Field(default=None, max_length=50)
     lot_number: int | None = Field(default=None, gt=0)
     full_name: str = Field(min_length=2, max_length=100)
@@ -42,6 +43,8 @@ class WebsiteRequest(BaseModel):
     preferred_date: date | None = None
     preferred_time: Literal['Por coordinar', 'Por la mañana', 'Por la tarde'] = 'Por coordinar'
     message: str = Field(default='', max_length=1500)
+    payment_plan: Literal['financed', 'cash', 'undecided'] | None = None
+    financing_months: int | None = Field(default=None, strict=True)
 
     @model_validator(mode='after')
     def validate_request(self):
@@ -53,7 +56,11 @@ class WebsiteRequest(BaseModel):
         if self.email:
             self.email = self.email.lower()
         self.block = normalize_block(self.block) or None
-        if bool(self.block) != bool(self.lot_number):
+        if self.project_slug == MACULI_SLUG:
+            if self.block:
+                raise ValueError('Los lotes de Maculí se identifican por número, sin manzana.')
+            maculi_quote(0, self.payment_plan, self.financing_months)
+        elif bool(self.block) != bool(self.lot_number):
             raise ValueError('Indica tanto manzana como lote.')
         if self.kind == 'reservation' and not self.lot_number:
             raise ValueError('Selecciona el lote que deseas apartar.')
@@ -105,7 +112,7 @@ async def catalog(slug: str, db: AsyncSession = Depends(get_db)):
     return {'project_slug': slug, 'lots': [
         {'block': normalize_block(l.block), 'lot_number': l.lot_number, 'status': l.status.value,
          'area_sqm': l.area_sqm, 'price_per_sqm': l.price_per_sqm, 'total_price': round(l.area_sqm * l.price_per_sqm, 2)}
-        for l in lots if l.block
+        for l in lots if l.block or project.slug == MACULI_SLUG
     ]}
 
 
@@ -113,7 +120,8 @@ async def catalog(slug: str, db: AsyncSession = Depends(get_db)):
 @limiter.limit('10/minute')
 async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSession = Depends(get_db)):
     channel = 'web:' + str(data.request_id)
-    fingerprint = hashlib.sha256(data.model_dump_json(exclude={'request_id'}).encode()).hexdigest()
+    excluded = {'request_id'} if data.project_slug == MACULI_SLUG else {'request_id', 'payment_plan', 'financing_months'}
+    fingerprint = hashlib.sha256(data.model_dump_json(exclude=excluded).encode()).hexdigest()
     await lock_key(db, channel)
     existing = (await db.execute(select(ClientInteraction).where(ClientInteraction.channel == channel))).scalar_one_or_none()
     if existing:
@@ -121,7 +129,8 @@ async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSessio
         if saved.get('fingerprint') != fingerprint:
             raise HTTPException(409, 'Esta solicitud ya fue enviada con otros datos. Inicia una nueva solicitud.')
         return receipt(existing, saved)
-    if data.kind == 'visit' and data.preferred_date < datetime.now(ZoneInfo('America/Hermosillo')).date():
+    project_timezone = 'America/Cancun' if data.project_slug == MACULI_SLUG else 'America/Hermosillo'
+    if data.kind == 'visit' and data.preferred_date < datetime.now(ZoneInfo(project_timezone)).date():
         raise HTTPException(422, 'La fecha de visita no puede estar en el pasado.')
     project = await resolve_public_project(db, data.project_slug)
     if not project:
@@ -131,7 +140,7 @@ async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSessio
         candidates = (await db.execute(select(Lot).where(
             Lot.project_id == project.id, Lot.lot_number == data.lot_number
         ).with_for_update())).scalars().all()
-        matches = [l for l in candidates if normalize_block(l.block) == data.block]
+        matches = [l for l in candidates if (normalize_block(l.block) or None) == data.block]
         if len(matches) != 1:
             raise HTTPException(409, 'No pudimos vincular esta manzana y lote. Contacta al asesor.')
         lot = matches[0]
@@ -150,28 +159,32 @@ async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSessio
         db.add(client)
         await db.flush()
     sale = None
+    quotation = maculi_quote(round(lot.area_sqm * lot.price_per_sqm, 2), data.payment_plan, data.financing_months) if lot and project.slug == MACULI_SLUG else None
     if data.kind == 'reservation':
         price = round(lot.area_sqm * lot.price_per_sqm, 2)
         # Keep the supplied plan terms under either the current or legacy slug.
         down = min(15000, price) if project.slug in PLAN_SLUGS else round(price * .30, 2)
         amount = price - down
         rate, months = .0141033227511898, 144
-        sale = Sale(client_id=client.id, lot_id=lot.id, sale_price=price, down_payment=down,
-                    financing_amount=amount, interest_rate=rate * 12 * 100, payment_terms_months=months,
-                    monthly_payment=round(amount * rate / (1 - (1 + rate) ** -months), 2),
+        commercial = {k: v for k, v in quotation.items() if k != 'payment_plan'} if quotation else dict(
+            sale_price=price, down_payment=down, financing_amount=amount, interest_rate=rate * 12 * 100,
+            payment_terms_months=months, monthly_payment=round(amount * rate / (1 - (1 + rate) ** -months), 2))
+        sale = Sale(client_id=client.id, lot_id=lot.id, **commercial,
                     status=SaleStatus.RESERVED, reservation_expires_at=datetime.now(timezone.utc) + timedelta(days=15),
-                    notes=f'Apartado web: {data.block} · lote {data.lot_number}. {data.message}')
+                    notes=f'Apartado web: {data.block or project.name} · lote {data.lot_number}. {data.message}')
         db.add(sale)
         lot.status = LotStatus.RESERVED
         lot.sold_to_client_id = client.id
         client.status = ClientStatus.RESERVATION
         await db.flush()
+        await recount_project(db, project.id)
     saved = {'kind': data.kind, 'fingerprint': fingerprint, 'project_slug': project.slug,
              'project_name': project.name, 'block': data.block, 'lot_number': data.lot_number,
              'lot_id': lot.id if lot else None, 'sale_id': sale.id if sale else None,
              'preferred_date': data.preferred_date.isoformat() if data.preferred_date else None,
              'preferred_time': data.preferred_time, 'status': 'pending',
              'full_name': data.full_name, 'email': data.email, 'phone': data.phone,
+             'quotation': quotation,
              'expires_at': sale.reservation_expires_at.isoformat() if sale else None}
     interaction = ClientInteraction(client_id=client.id, interaction_type='web_request',
                                     channel=channel, notes=data.message, metadata_json=json.dumps(saved, ensure_ascii=False))
@@ -275,10 +288,18 @@ async def request_action(request_id: int, data: RequestAction, request: Request,
             price = round(lot.area_sqm * lot.price_per_sqm, 2)
             down = min(15000, price) if saved.get('project_slug') in PLAN_SLUGS else round(price * .3, 2)
             rate, months = .0141033227511898, 144
+            commercial = dict(sale_price=price, down_payment=down, financing_amount=price-down,
+                              interest_rate=rate*1200, payment_terms_months=months,
+                              monthly_payment=round((price-down)*rate/(1-(1+rate)**-months), 2))
+            if saved.get('project_slug') == MACULI_SLUG:
+                previous = saved.get('quotation') or {}
+                payment_plan = previous.get('payment_plan', 'undecided')
+                quote_months = previous.get('payment_terms_months') if payment_plan == 'financed' else None
+                current_quote = maculi_quote(price, payment_plan, quote_months)
+                commercial = {k: v for k, v in current_quote.items() if k != 'payment_plan'}
+                saved['quotation'] = current_quote
             sale = Sale(client_id=row.client_id, lot_id=lot.id, agent_id=current_user.id,
-                        sale_price=price, down_payment=down, financing_amount=price-down,
-                        interest_rate=rate*1200, payment_terms_months=months,
-                        monthly_payment=round((price-down)*rate/(1-(1+rate)**-months), 2),
+                        **commercial,
                         status=SaleStatus.RESERVED, reservation_expires_at=datetime.now(timezone.utc)+timedelta(days=15),
                         notes=f'Originada desde WEB-{row.id}. {row.notes or ""}')
             db.add(sale)

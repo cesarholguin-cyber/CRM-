@@ -34,7 +34,7 @@ async def crm(setup):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('origin', ['https://eltriunfo.mx', 'https://www.eltriunfo.mx'])
+@pytest.mark.parametrize('origin', ['https://eltriunfo.mx', 'https://www.eltriunfo.mx', 'https://maculisur.com.mx', 'https://www.maculisur.com.mx'])
 async def test_catalog_and_visit_request_readable_from_landing(crm, origin):
     response = await crm.get('/api/v1/public/catalog/campestre-el-triunfo', headers={'Origin': origin})
     assert response.status_code == 200, response.text

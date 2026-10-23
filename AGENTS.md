@@ -20,3 +20,5 @@
 
 
 - Corrección 2026-10-22: este CRM no lleva biblioteca de videos ni rol Sistemas. Mantener únicamente Administrador y Promotor, con correo y nombre de usuario separados. Retirar navegación, API, carga/reproducción/eliminación y conexión B2 de tutoriales. Conservar bucket y archivos para el CRM correcto; no tocar expedientes documentales de ventas. La integración anterior y credenciales se entregan fuera del repositorio.
+
+- Dominio público confirmado por los errores de producción del 23 de octubre de 2026: `https://eltriunfo.mx` (y variante `https://www.eltriunfo.mx`). El backend debe permitir ambos orígenes exactos en CORS aunque Easypanel tenga un `CORS_ORIGINS` antiguo. Verificar GET de catálogo y preflight POST de solicitudes con ese Origin; HTTP 200 sin Access-Control-Allow-Origin no demuestra que el navegador pueda leer el inventario. No usar comodines ni modificar datos comerciales para corregir este permiso.

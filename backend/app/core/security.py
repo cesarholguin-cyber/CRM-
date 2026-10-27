@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
-from jose import jwt, JWTError
+import jwt
+from jwt import InvalidTokenError
 import bcrypt as _bcrypt
 from cryptography.fernet import Fernet
 import pyotp
@@ -42,9 +43,9 @@ def create_refresh_token(subject: str | Any) -> str:
 
 def decode_token(token: str) -> dict[str, Any]:
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM], options={"require": ["exp", "sub", "type"]})
         return payload
-    except JWTError:
+    except InvalidTokenError:
         return {}
 
 

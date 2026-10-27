@@ -10,7 +10,7 @@ import json
 import pytest
 from fastapi import FastAPI, HTTPException
 from httpx import AsyncClient, ASGITransport
-from jose import jwt
+import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.core.database import Base, get_db
@@ -27,7 +27,7 @@ async def setup(monkeypatch):
         await conn.run_sync(Base.metadata.create_all)
     sessions = async_sessionmaker(engine, expire_on_commit=False)
     uid, sid = str(uuid4()), str(uuid4())
-    token = jwt.encode({'sub':uid,'session_id':sid,'aal':'aal1'}, 'test-secret')
+    token = jwt.encode({'sub':uid,'session_id':sid,'aal':'aal1'}, 'test-session-key-with-at-least-32-bytes')
     identity = {'id':uid,'email':'admin@example.com','user_metadata':{'role':'ADMIN'}}
     async with sessions() as db:
         db.add(User(email='admin@example.com',username='admin',full_name='Admin',
@@ -81,7 +81,7 @@ async def test_admin_requires_linked_uuid_and_not_user_metadata(setup):
     # Same email, different Auth UUID must not inherit the old profile or role.
     stranger=str(uuid4())
     remote.return_value=dict(identity,id=stranger)
-    other=jwt.encode({'sub':stranger,'session_id':str(uuid4())},'test-secret')
+    other=jwt.encode({'sub':stranger,'session_id':str(uuid4())},'test-session-key-with-at-least-32-bytes')
     assert (await http.get('/api/v1/auth/me',headers={'Authorization':'Bearer '+other})).status_code==403
 
 

@@ -2,11 +2,12 @@
 set -e
 
 echo "=== Installing Python dependencies ==="
-pip install -r backend/requirements.txt
+python -m pip install pip==26.2.2
+python -m pip install --require-hashes -r backend/requirements.lock
 
 echo "=== Building frontend ==="
 cd frontend
-npm install
+npm ci
 npm run build
 cd ..
 

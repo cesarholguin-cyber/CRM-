@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from app.core.rate_limit import public_intake_limit
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
@@ -74,7 +75,10 @@ class ReserveResponse(BaseModel):
 
 
 @router.post("/reserve", response_model=ReserveResponse)
+@public_intake_limit
 async def public_reserve(
+    request: Request,
+    response: Response,
     data: ReserveRequest,
     db: AsyncSession = Depends(get_db),
 ):
@@ -166,4 +170,3 @@ async def public_reserve(
         sale_id=sale.id,
         lot_number=lot.lot_number,
     )
-

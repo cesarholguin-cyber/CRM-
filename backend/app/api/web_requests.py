@@ -7,12 +7,11 @@ from typing import Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+from app.core.rate_limit import limiter, public_intake_limit
 
 from app.api.deps import get_commercial_user, get_current_user, get_request_info
 from app.core.audit import write_audit_log
@@ -27,7 +26,6 @@ from app.services.maculi import SLUG as MACULI_SLUG, quote as maculi_quote
 
 public_router = APIRouter(prefix="/public", tags=["Public"])
 router = APIRouter(prefix="/web-requests", tags=["Website requests"], dependencies=[Depends(get_commercial_user)])
-limiter = Limiter(key_func=get_remote_address)
 
 
 class WebsiteRequest(BaseModel):
@@ -117,8 +115,8 @@ async def catalog(slug: str, db: AsyncSession = Depends(get_db)):
 
 
 @public_router.post('/requests')
-@limiter.limit('10/minute')
-async def submit_request(request: Request, data: WebsiteRequest, db: AsyncSession = Depends(get_db)):
+@public_intake_limit
+async def submit_request(request: Request, response: Response, data: WebsiteRequest, db: AsyncSession = Depends(get_db)):
     channel = 'web:' + str(data.request_id)
     excluded = {'request_id'} if data.project_slug == MACULI_SLUG else {'request_id', 'payment_plan', 'financing_months'}
     fingerprint = hashlib.sha256(data.model_dump_json(exclude=excluded).encode()).hexdigest()

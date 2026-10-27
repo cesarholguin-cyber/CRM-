@@ -6,7 +6,8 @@ used for authorization. Only explicitly linked profiles can enter the CRM.
 from uuid import UUID
 import httpx
 from fastapi import HTTPException
-from jose import jwt, JWTError
+import jwt
+from jwt import InvalidTokenError
 from sqlalchemy import select, text, func
 
 from app.core.config import settings
@@ -78,11 +79,11 @@ async def authenticated_user(db, access_token):
     # expiry. Only then read the signed session ID; never trust decoded-only JWTs.
     try:
         subject = str(UUID(identity['id']))
-        claims = jwt.get_unverified_claims(access_token)
+        claims = jwt.decode(access_token, options={"verify_signature": False})
         session_id = str(UUID(claims['session_id']))
         if claims['sub'] != subject:
             raise ValueError('Subject mismatch')
-    except (KeyError, TypeError, ValueError, JWTError):
+    except (KeyError, TypeError, ValueError, InvalidTokenError):
         raise HTTPException(401, 'Sesión inválida.') from None
     if not await session_exists(db, subject, session_id):
         raise HTTPException(401, 'La sesión terminó o el usuario fue desactivado.')

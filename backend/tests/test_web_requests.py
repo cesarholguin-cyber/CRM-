@@ -42,7 +42,8 @@ async def setup(tmp_path, monkeypatch):
     app.include_router(web_requests.public_router,prefix='/api/v1')
     app.include_router(web_requests.router,prefix='/api/v1')
     app.include_router(sales.router,prefix='/api/v1')
-    app.state.limiter=web_requests.limiter;web_requests.limiter.enabled=False
+    app.state.limiter=web_requests.limiter
+    monkeypatch.setattr(web_requests.limiter, "enabled", False)
     app.add_exception_handler(RateLimitExceeded,_rate_limit_exceeded_handler)
     async def db_override():
         async with sessions() as db:yield db
@@ -77,6 +78,20 @@ async def test_retry_returns_same_reference_without_duplicate(setup):
         assert await db.scalar(select(func.count()).select_from(Sale))==1
         assert await db.scalar(select(func.count()).select_from(ClientInteraction))==1
     data['full_name']='Otro nombre';assert (await send(http,data)).status_code==409
+
+
+async def test_successful_reservation_with_rate_limit_headers(setup, monkeypatch):
+    http, sessions, _ = setup
+    monkeypatch.setattr(web_requests.limiter, 'enabled', True)
+    web_requests.limiter.reset()
+    try:
+        response = await send(http, payload())
+        assert response.status_code == 200, response.text
+        assert response.headers['x-ratelimit-limit'] == '10'
+        async with sessions() as db:
+            assert await db.scalar(select(func.count()).select_from(Sale)) == 1
+    finally:
+        web_requests.limiter.reset()
 
 @pytest.mark.asyncio
 async def test_visit_does_not_reserve_inventory_and_can_be_managed(setup):

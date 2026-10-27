@@ -12,7 +12,7 @@ from app.models.user import UserRole
 
 @pytest.mark.asyncio
 async def test_tutorial_routes_are_not_registered():
-    assert all('/tutorials' not in route.path for route in app.routes)
+    assert all('/tutorials' not in path for path in app.openapi()['paths'])
     assert {role.value for role in UserRole} == {'ADMIN', 'PROMOTOR'}
     async with AsyncClient(transport=ASGITransport(app=app), base_url='http://test') as client:
         for path in ['/api/v1/tutorials', '/api/v1/tutorials/1/play', '/api/v1/tutorials/uploads/test']:

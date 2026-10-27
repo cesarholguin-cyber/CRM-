@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional, Literal
 import os
 import secrets
@@ -37,19 +37,23 @@ class Settings(BaseSettings):
             return args
         if self.DATABASE_MODE == "supabase":
             return {"prepare_threshold": None, "options": "-csearch_path=crm -ctimezone=UTC",
-                    "sslmode": "require", "connect_timeout": 15}
+                    "sslmode": "verify-full",
+                    "sslrootcert": self.DATABASE_SSL_ROOT_CERT or str(
+                        Path(__file__).resolve().parents[2] / "certs/supabase-prod-root-2021.crt"),
+                    "connect_timeout": 15}
         return {"prepare_threshold": None} if "psycopg" in self.DATABASE_URL else {}
 
     # Database — Render provides DATABASE_URL in sync format; we auto-convert
     DATABASE_URL: str = ""
     DATABASE_URL_SYNC: str = ""
+    DATABASE_SSL_ROOT_CERT: str = ""
     SUPABASE_URL: str = ""
     SUPABASE_PUBLISHABLE_KEY: str = ""
     SUPABASE_SECRET_KEY: str = ""
 
     # Security - JWT
     SECRET_KEY: str = "change-me-in-production"
-    ALGORITHM: str = "HS256"
+    ALGORITHM: Literal["HS256", "HS384", "HS512"] = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
@@ -82,10 +86,7 @@ class Settings(BaseSettings):
     # File upload
     MAX_UPLOAD_SIZE_MB: int = 10
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

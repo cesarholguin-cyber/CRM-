@@ -2,8 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from contextlib import asynccontextmanager
 import time
@@ -12,6 +11,8 @@ import os
 from pathlib import Path
 
 from app.core.config import settings
+from app.core.rate_limit import limiter, APIRateLimitMiddleware
+from app.core.request_limits import RequestBodyLimitMiddleware
 from app.core.database import engine, Base, async_session_factory
 from app.core.security import get_password_hash
 from app.models.user import User, UserRole
@@ -19,10 +20,6 @@ from app.api import auth, users, projects, lots, clients, sales, dashboard, publ
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address, default_limits=[f"{settings.RATE_LIMIT_PER_MINUTE}/minute"])
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -112,6 +109,9 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 # Serve frontend static files
@@ -125,6 +125,8 @@ else:
 # Rate limit handler
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(RequestBodyLimitMiddleware)
+app.add_middleware(APIRateLimitMiddleware)
 
 # CORS
 cors_origins = settings.cors_origins_list
@@ -169,6 +171,13 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if not settings.DEBUG:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; "
+            "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+        )
     return response
 
 
@@ -184,6 +193,7 @@ async def log_requests(request: Request, call_next):
 
 # Health check
 @app.get("/health")
+@limiter.exempt
 async def health_check():
     return {"status": "healthy", "app": settings.APP_NAME, "version": settings.VERSION,
             "database_mode": settings.DATABASE_MODE,
@@ -208,6 +218,7 @@ app.include_router(web_requests.router, prefix="/api/v1")
 
 # Serve frontend for all non-API routes (MUST be after all routers)
 @app.get("/{full_path:path}")
+@limiter.exempt
 async def serve_frontend(full_path: str):
     # API routes are handled by routers above
     if full_path.startswith("api/"):

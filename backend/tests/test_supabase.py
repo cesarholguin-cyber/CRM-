@@ -19,7 +19,12 @@ def test_supabase_engines_share_private_schema_and_require_session_key():
     assert config.DATABASE_URL == config.DATABASE_URL_SYNC
     assert config.DATABASE_URL.startswith('postgresql+psycopg://')
     assert config.database_connect_args['options'] == '-csearch_path=crm -ctimezone=UTC'
-    assert config.database_connect_args['sslmode'] == 'require'
+    assert config.database_connect_args['sslmode'] == 'verify-full'
+    assert config.database_connect_args['sslrootcert'].endswith('supabase-prod-root-2021.crt')
+    from pathlib import Path
+    assert Path(config.database_connect_args['sslrootcert']).is_file()
+    custom = Settings(**(values | {'DATABASE_SSL_ROOT_CERT': '/etc/ssl/custom-root.crt'}))
+    assert custom.database_connect_args['sslrootcert'] == '/etc/ssl/custom-root.crt'
     with pytest.raises(ValueError, match='SECRET_KEY'):
         Settings(**(values | {'SECRET_KEY': ''}))
     with pytest.raises(ValueError, match='PostgreSQL'):

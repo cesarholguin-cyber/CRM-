@@ -26,6 +26,7 @@ from app.models.sale import Sale, SaleStatus
 from app.services.maculi import SLUG as MACULI_SLUG, quote as maculi_quote
 
 _HOURLY_SLOT = re.compile(r'^(?:[01]\d|2[0-3]):00$')
+_LEGACY_TIMES = {'Por coordinar', 'Por la mañana', 'Por la tarde'}
 
 
 def _is_hourly_slot(value: str | None) -> bool:
@@ -79,7 +80,7 @@ class WebsiteRequest(BaseModel):
             raise ValueError('Selecciona el lote que deseas apartar.')
         if self.kind == 'visit' and not self.preferred_date:
             raise ValueError('Elige la fecha de tu visita.')
-        if self.kind == 'visit' and not _is_hourly_slot(self.preferred_time):
+        if self.kind == 'visit' and self.preferred_time not in _LEGACY_TIMES and not _is_hourly_slot(self.preferred_time):
             raise ValueError('Elige una hora disponible en punto.')
         return self
 

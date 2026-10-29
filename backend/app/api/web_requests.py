@@ -25,7 +25,7 @@ from app.services.project_identity import PLAN_SLUGS, normalize_block, resolve_p
 from app.models.sale import Sale, SaleStatus
 from app.services.maculi import SLUG as MACULI_SLUG, quote as maculi_quote
 
-_HOURLY_SLOT = re.compile(r'^(?:[01]\d|2[0-3]):00$')
+_HOURLY_SLOT = re.compile(r'^(?:0[9]|1[0-7]):00$')
 _LEGACY_TIMES = {'Por coordinar', 'Por la mañana', 'Por la tarde'}
 
 
@@ -38,7 +38,7 @@ def _project_timezone(slug: str) -> ZoneInfo:
 
 
 def _appointment_slots():
-    return tuple(f'{hour:02d}:00' for hour in range(24))
+    return tuple(f'{hour:02d}:00' for hour in range(9, 18))
 
 public_router = APIRouter(prefix="/public", tags=["Public"])
 router = APIRouter(prefix="/web-requests", tags=["Website requests"], dependencies=[Depends(get_commercial_user)])

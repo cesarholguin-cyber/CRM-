@@ -95,12 +95,12 @@ async def test_successful_reservation_with_rate_limit_headers(setup, monkeypatch
 
 @pytest.mark.asyncio
 async def test_visit_does_not_reserve_inventory_and_can_be_managed(setup):
-    http,sessions,app=setup;data=payload();data.update(kind='visit',preferred_date=str(date.today()+timedelta(days=3)),preferred_time='Por la tarde')
+    http,sessions,app=setup;data=payload();data.update(kind='visit',preferred_date=str(date.today()+timedelta(days=3)),preferred_time='09:00')
     assert (await send(http,data)).status_code==200
     async with sessions() as db:
         assert (await db.get(Lot,1)).status==LotStatus.AVAILABLE
         assert await db.scalar(select(func.count()).select_from(Sale))==0
-    authorize(app);feed=(await http.get('/api/v1/web-requests')).json();assert feed[0]['preferred_time']=='Por la tarde'
+    authorize(app);feed=(await http.get('/api/v1/web-requests')).json();assert feed[0]['preferred_time']=='09:00'
     update=await http.patch(f"/api/v1/web-requests/{feed[0]['id']}",json={'status':'confirmed'});assert update.status_code==200
 
 @pytest.mark.asyncio

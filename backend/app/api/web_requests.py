@@ -4,10 +4,11 @@ import json
 import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Literal
+from types import SimpleNamespace
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +25,20 @@ from app.services.project_identity import PLAN_SLUGS, normalize_block, resolve_p
 from app.models.sale import Sale, SaleStatus
 from app.services.maculi import SLUG as MACULI_SLUG, quote as maculi_quote
 
+_HOURLY_SLOT = re.compile(r'^(?:[01]\d|2[0-3]):00$')
+
+
+def _is_hourly_slot(value: str | None) -> bool:
+    return bool(value and _HOURLY_SLOT.fullmatch(value))
+
+
+def _project_timezone(slug: str) -> ZoneInfo:
+    return ZoneInfo('America/Cancun' if slug == MACULI_SLUG else 'America/Hermosillo')
+
+
+def _appointment_slots():
+    return tuple(f'{hour:02d}:00' for hour in range(24))
+
 public_router = APIRouter(prefix="/public", tags=["Public"])
 router = APIRouter(prefix="/web-requests", tags=["Website requests"], dependencies=[Depends(get_commercial_user)])
 
@@ -39,7 +54,7 @@ class WebsiteRequest(BaseModel):
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=30)
     preferred_date: date | None = None
-    preferred_time: Literal['Por coordinar', 'Por la mañana', 'Por la tarde'] = 'Por coordinar'
+    preferred_time: str = Field(default='Por coordinar', max_length=20)
     message: str = Field(default='', max_length=1500)
     payment_plan: Literal['financed', 'cash', 'undecided'] | None = None
     financing_months: int | None = Field(default=None, strict=True)
@@ -64,6 +79,8 @@ class WebsiteRequest(BaseModel):
             raise ValueError('Selecciona el lote que deseas apartar.')
         if self.kind == 'visit' and not self.preferred_date:
             raise ValueError('Elige la fecha de tu visita.')
+        if self.kind == 'visit' and not _is_hourly_slot(self.preferred_time):
+            raise ValueError('Elige una hora disponible en punto.')
         return self
 
 
@@ -101,6 +118,34 @@ def public_config():
     return {'test_mode': settings.DATABASE_MODE == 'embedded'}
 
 
+@public_router.get('/availability/{slug}')
+async def visit_availability(slug: str, day: date = Query(alias='date'), db: AsyncSession = Depends(get_db)):
+    """Return only occupied hourly slots; never expose names or contact details."""
+    project = await resolve_public_project(db, slug)
+    if not project:
+        raise HTTPException(404, 'Desarrollo no encontrado.')
+    local_now = datetime.now(_project_timezone(project.slug))
+    if day < local_now.date():
+        raise HTTPException(422, 'La fecha de visita no puede estar en el pasado.')
+    rows = (await db.execute(select(ClientInteraction.metadata_json).where(
+        ClientInteraction.interaction_type == 'web_request',
+        ClientInteraction.metadata_json.contains(f'"preferred_date": "{day.isoformat()}"')
+    ))).scalars().all()
+    occupied = set()
+    for raw in rows:
+        saved = metadata(SimpleNamespace(metadata_json=raw))
+        if (saved.get('kind') == 'visit' and saved.get('project_slug') == project.slug
+                and saved.get('status') not in {'cancelled', 'completed', 'sold'}
+                and _is_hourly_slot(saved.get('preferred_time'))):
+            occupied.add(saved['preferred_time'])
+    past = ([slot for slot in _appointment_slots()
+             if int(slot[:2]) <= local_now.hour] if day == local_now.date() else [])
+    return {'project_slug': project.slug, 'date': day.isoformat(),
+            'timezone': str(_project_timezone(project.slug)),
+            'times': list(_appointment_slots()), 'occupied_times': sorted(occupied),
+            'past_times': past}
+
+
 @public_router.get('/catalog/{slug}')
 async def catalog(slug: str, db: AsyncSession = Depends(get_db)):
     project = await resolve_public_project(db, slug)
@@ -127,12 +172,28 @@ async def submit_request(request: Request, response: Response, data: WebsiteRequ
         if saved.get('fingerprint') != fingerprint:
             raise HTTPException(409, 'Esta solicitud ya fue enviada con otros datos. Inicia una nueva solicitud.')
         return receipt(existing, saved)
-    project_timezone = 'America/Cancun' if data.project_slug == MACULI_SLUG else 'America/Hermosillo'
-    if data.kind == 'visit' and data.preferred_date < datetime.now(ZoneInfo(project_timezone)).date():
-        raise HTTPException(422, 'La fecha de visita no puede estar en el pasado.')
     project = await resolve_public_project(db, data.project_slug)
     if not project:
         raise HTTPException(503, 'Este desarrollo todavía no recibe solicitudes en línea. Contacta al asesor.')
+    project_timezone = _project_timezone(project.slug)
+    if data.kind == 'visit' and data.preferred_date < datetime.now(project_timezone).date():
+        raise HTTPException(422, 'La fecha de visita no puede estar en el pasado.')
+    if data.kind == 'visit':
+        local_now = datetime.now(project_timezone)
+        requested_at = datetime.combine(data.preferred_date, datetime.strptime(data.preferred_time, '%H:%M').time(), project_timezone)
+        if requested_at <= local_now:
+            raise HTTPException(409, 'Esa hora ya pasó. Elige una hora futura.')
+        await lock_key(db, f'appointment:{project.id}:{data.preferred_date.isoformat()}')
+        rows = (await db.execute(select(ClientInteraction.metadata_json).where(
+            ClientInteraction.interaction_type == 'web_request',
+            ClientInteraction.metadata_json.contains(f'"preferred_date": "{data.preferred_date.isoformat()}"')
+        ))).scalars().all()
+        for raw in rows:
+            saved_visit = metadata(SimpleNamespace(metadata_json=raw))
+            if (saved_visit.get('kind') == 'visit' and saved_visit.get('project_slug') == project.slug
+                    and saved_visit.get('status') not in {'cancelled', 'completed', 'sold'}
+                    and saved_visit.get('preferred_time') == data.preferred_time):
+                raise HTTPException(409, 'Esa hora acaba de ocuparse. Elige otra hora disponible.')
     lot = None
     if data.lot_number:
         candidates = (await db.execute(select(Lot).where(
